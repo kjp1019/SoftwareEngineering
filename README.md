@@ -4,8 +4,7 @@
 이 프로젝트는 TOEIC 단어 학습을 위한 웹 애플리케이션입니다. 사용자들은 단어를 학습하고, 북마크하고, 개인 단어장을 만들 수 있습니다.
 
 ## 기술 스택
-- Python 3.8+
-- Django 4.2
+- Django 4.2(Python 3.8+)
 - MySQL 8.0
 - Bootstrap 5
 - JavaScript
