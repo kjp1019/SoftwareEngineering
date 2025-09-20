@@ -1,0 +1,520 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}단어장 - TOEIC 단어 학습{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center py-3">
+                    <h2 class="h4 mb-0 text-primary">
+                        {% if show_bookmarked_only %}
+                        즐겨찾기
+                        {% elif show_personal_only %}
+                        나만의 단어장
+                        {% else %}
+                        단어장
+                        {% endif %}
+                    </h2>
+                    {% if user.is_superuser %}
+                    <div>
+                        <a href="{% url 'vocabulary:word_add' %}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>단어 추가
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="card-body">
+                    <!-- 검색 및 필터 -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <form method="get" class="d-flex">
+                                <div class="input-group">
+                                    <input type="text" name="search" class="form-control" 
+                                           placeholder="단어 또는 의미 검색" value="{{ search_query }}">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-search me-2"></i>검색
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-end">
+                                <select class="form-select w-auto" name="difficulty" id="difficultyFilter">
+                                    <option value="">전체 난이도</option>
+                                    <option value="easy" {% if difficulty == 'easy' %}selected{% endif %}>초급</option>
+                                    <option value="medium" {% if difficulty == 'medium' %}selected{% endif %}>중급</option>
+                                    <option value="hard" {% if difficulty == 'hard' %}selected{% endif %}>고급</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 단어 목록 -->
+                    {% if words %}
+                    <div class="table-responsive">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <p class="text-muted mb-0">총 {{ total_words }}개의 단어</p>
+                        </div>
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="d-none d-md-table-cell">영단어</th>
+                                    <th class="d-none d-md-table-cell">의미</th>
+                                    <th class="d-none d-md-table-cell">난이도</th>
+                                    {% if not show_personal_only %}
+                                    <th class="d-none d-md-table-cell">즐겨찾기</th>
+                                    {% endif %}
+                                    {% if not show_bookmarked_only %}
+                                    <th class="d-none d-md-table-cell">나만의 단어장</th>
+                                    {% endif %}
+                                    <th class="d-none d-md-table-cell">상세</th>
+                                    <th class="d-table-cell d-md-none">단어 정보</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for word in words %}
+                                <tr>
+                                    <td class="d-none d-md-table-cell">
+                                        <div class="d-flex align-items-center">
+                                            <span class="fw-bold">{{ word.english }}</span>
+                                            <button class="btn btn-sm btn-link text-primary" onclick="speakText('{{ word.english }}')">
+                                                <i class="fas fa-volume-up"></i>
+                                            </button>
+                                        </div>
+                                        <small class="text-muted">[{{ word.part_of_speech }}]</small>
+                                    </td>
+                                    <td class="d-none d-md-table-cell">{{ word.korean }}</td>
+                                    <td class="d-none d-md-table-cell">
+                                        {% if word.difficulty == 'easy' %}
+                                        <span class="badge bg-success">초급</span>
+                                        {% elif word.difficulty == 'medium' %}
+                                        <span class="badge bg-warning text-dark">중급</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">고급</span>
+                                        {% endif %}
+                                    </td>
+                                    {% if not show_personal_only %}
+                                    <td class="d-none d-md-table-cell">
+                                        <button class="bookmark-btn btn btn-sm p-0" 
+                                                data-word-id="{{ word.id }}"
+                                                data-is-bookmarked="{{ word.is_bookmarked|yesno:'true,false' }}">
+                                            <i class="fas {% if word.is_bookmarked %}fa-star text-yellow-500{% else %}fa-star text-gray-400{% endif %}"></i>
+                                        </button>
+                                    </td>
+                                    {% endif %}
+                                    {% if not show_bookmarked_only %}
+                                    <td class="d-none d-md-table-cell">
+                                        <button class="personal-word-btn btn btn-sm p-0"
+                                                data-word-id="{{ word.id }}"
+                                                data-is-personal="{{ word.is_in_personal_list|yesno:'true,false' }}">
+                                            <i class="fas {% if word.is_in_personal_list %}fa-folder-open text-blue-500{% else %}fa-folder text-gray-400{% endif %}"></i>
+                                        </button>
+                                    </td>
+                                    {% endif %}
+                                    <td class="d-none d-md-table-cell">
+                                        <div class="btn-group">
+                                            <a href="{% url 'vocabulary:word_detail' word.id %}" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye me-1"></i>상세
+                                            </a>
+                                            {% if user.is_superuser %}
+                                            <a href="{% url 'vocabulary:word_edit' word.id %}" 
+                                               class="btn btn-sm btn-outline-secondary">
+                                                <i class="fas fa-edit me-1"></i>수정
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                                    onclick="deleteWord({{ word.id }})">
+                                                <i class="fas fa-trash-alt me-1"></i>삭제
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <!-- 모바일 뷰 -->
+                                    <td class="d-table-cell d-md-none">
+                                        <div class="d-flex flex-column">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <span class="fw-bold me-2">{{ word.english }}</span>
+                                                <button class="btn btn-sm btn-link text-primary p-0" onclick="speakText('{{ word.english }}')">
+                                                    <i class="fas fa-volume-up"></i>
+                                                </button>
+                                            </div>
+                                            <div class="d-flex align-items-center mb-2">
+                                                <span class="text-muted me-2">[{{ word.part_of_speech }}]</span>
+                                                {% if word.difficulty == 'easy' %}
+                                                <span class="badge bg-success">초급</span>
+                                                {% elif word.difficulty == 'medium' %}
+                                                <span class="badge bg-warning text-dark">중급</span>
+                                                {% else %}
+                                                <span class="badge bg-danger">고급</span>
+                                                {% endif %}
+                                            </div>
+                                            <div class="d-flex align-items-center">
+                                                <span class="me-2">{{ word.korean }}</span>
+                                                <div class="btn-group ms-auto">
+                                                    {% if not show_personal_only %}
+                                                    <button class="bookmark-btn btn btn-sm p-0 me-2" 
+                                                            data-word-id="{{ word.id }}"
+                                                            data-is-bookmarked="{{ word.is_bookmarked|yesno:'true,false' }}">
+                                                        <i class="fas {% if word.is_bookmarked %}fa-star text-yellow-500{% else %}fa-star text-gray-400{% endif %}"></i>
+                                                    </button>
+                                                    {% endif %}
+                                                    {% if not show_bookmarked_only %}
+                                                    <button class="personal-word-btn btn btn-sm p-0 me-2"
+                                                            data-word-id="{{ word.id }}"
+                                                            data-is-personal="{{ word.is_in_personal_list|yesno:'true,false' }}">
+                                                        <i class="fas {% if word.is_in_personal_list %}fa-folder-open text-blue-500{% else %}fa-folder text-gray-400{% endif %}"></i>
+                                                    </button>
+                                                    {% endif %}
+                                                    <a href="{% url 'vocabulary:word_detail' word.id %}" 
+                                                       class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    {% if user.is_superuser %}
+                                                    <a href="{% url 'vocabulary:word_edit' word.id %}" 
+                                                       class="btn btn-sm btn-outline-secondary">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger"
+                                                            onclick="deleteWord({{ word.id }})">
+                                                        <i class="fas fa-trash-alt"></i>
+                                                    </button>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 페이지네이션 -->
+                    {% if total_words > 20 %}
+                    <nav aria-label="단어 목록 페이지 네비게이션" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if words.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ words.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if difficulty %}&difficulty={{ difficulty }}{% endif %}">
+                                    <i class="fas fa-chevron-left me-1"></i>이전
+                                </a>
+                            </li>
+                            {% endif %}
+
+                            {% for num in words.paginator.page_range %}
+                                {% if num > words.number|add:'-3' and num < words.number|add:'3' %}
+                                <li class="page-item {% if words.number == num %}active{% endif %}">
+                                    <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if difficulty %}&difficulty={{ difficulty }}{% endif %}">
+                                        {{ num }}
+                                    </a>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if words.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ words.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if difficulty %}&difficulty={{ difficulty }}{% endif %}">
+                                    다음<i class="fas fa-chevron-right ms-1"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-book fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">등록된 단어가 없습니다.</p>
+                        {% if user.is_superuser %}
+                        <a href="{% url 'vocabulary:word_add' %}" class="btn btn-primary mt-3">
+                            <i class="fas fa-plus me-2"></i>첫 단어 추가하기
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+// 전역 변수 선언
+let isProcessing = false;  // 북마크 처리 중인지 확인하는 플래그
+let isProcessingPersonal = false;  // 개인 단어장 처리 중인지 확인하는 플래그
+
+// 난이도 필터 변경 시 자동 제출
+document.getElementById('difficultyFilter').addEventListener('change', function() {
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set('difficulty', this.value);
+    window.location.href = currentUrl.toString();
+});
+
+// 단어 삭제 함수
+function deleteWord(wordId) {
+    if (confirm('정말로 이 단어를 삭제하시겠습니까?')) {
+        fetch(`/vocabulary/words/${wordId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        }).then(response => {
+            if (response.ok) {
+                location.reload();
+            }
+        });
+    }
+}
+
+// 단어 발음 재생
+function speakText(text) {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    window.speechSynthesis.speak(utterance);
+}
+
+// 알림창 표시 함수
+function showAlert(message, type = 'success') {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert-container';
+    alertDiv.style.position = 'fixed';
+    alertDiv.style.top = '20px';
+    alertDiv.style.left = '50%';
+    alertDiv.style.transform = 'translateX(-50%)';
+    alertDiv.style.zIndex = '9999';
+    alertDiv.style.minWidth = '300px';
+    alertDiv.style.maxWidth = '500px';
+
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show`;
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    alertDiv.appendChild(alert);
+    document.body.appendChild(alertDiv);
+
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 3000);
+}
+
+// 북마크 토글 기능
+document.addEventListener('click', function(e) {
+    const button = e.target.closest('.bookmark-btn');
+    if (!button || isProcessing) return;
+
+    isProcessing = true;
+    const wordId = button.dataset.wordId;
+    const isBookmarked = button.dataset.isBookmarked === 'true';
+
+    fetch(`/vocabulary/words/${wordId}/toggle_bookmark/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 모든 북마크 버튼 업데이트
+            document.querySelectorAll(`.bookmark-btn[data-word-id="${wordId}"]`).forEach(btn => {
+                const icon = btn.querySelector('i');
+                if (data.is_bookmarked) {
+                    icon.classList.remove('text-gray-400');
+                    icon.classList.add('text-yellow-500');
+                } else {
+                    icon.classList.remove('text-yellow-500');
+                    icon.classList.add('text-gray-400');
+                }
+                btn.dataset.isBookmarked = data.is_bookmarked.toString();
+            });
+
+            // 알림 표시
+            showAlert(`
+                <i class="fas ${data.is_bookmarked ? 'fa-star text-yellow-500' : 'fa-star text-gray-400'} me-2"></i>
+                ${data.is_bookmarked ? '즐겨찾기에 추가되었습니다' : '즐겨찾기에서 제거되었습니다'}
+            `);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert(`
+            <i class="fas fa-exclamation-circle me-2"></i>
+            즐겨찾기 상태 변경 중 오류가 발생했습니다
+        `, 'danger');
+    })
+    .finally(() => {
+        isProcessing = false;
+    });
+});
+
+// 개인 단어장 토글 기능
+document.addEventListener('click', function(e) {
+    const button = e.target.closest('.personal-word-btn');
+    if (!button || isProcessingPersonal) return;
+
+    isProcessingPersonal = true;
+    const wordId = button.dataset.wordId;
+    const isPersonal = button.dataset.isPersonal === 'true';
+
+    fetch(`/vocabulary/words/${wordId}/toggle_personal/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 모든 개인 단어장 버튼 업데이트
+            document.querySelectorAll(`.personal-word-btn[data-word-id="${wordId}"]`).forEach(btn => {
+                const icon = btn.querySelector('i');
+                if (data.is_added) {
+                    icon.classList.remove('fa-folder', 'text-gray-400');
+                    icon.classList.add('fa-folder-open', 'text-blue-500');
+                } else {
+                    icon.classList.remove('fa-folder-open', 'text-blue-500');
+                    icon.classList.add('fa-folder', 'text-gray-400');
+                }
+                btn.dataset.isPersonal = data.is_added.toString();
+            });
+
+            // 알림 표시
+            showAlert(`
+                <i class="fas ${data.is_added ? 'fa-folder-open text-blue-500' : 'fa-folder text-gray-400'} me-2"></i>
+                ${data.is_added ? '개인 단어장에 추가되었습니다' : '개인 단어장에서 제거되었습니다'}
+            `);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert(`
+            <i class="fas fa-exclamation-circle me-2"></i>
+            개인 단어장 상태 변경 중 오류가 발생했습니다
+        `, 'danger');
+    })
+    .finally(() => {
+        isProcessingPersonal = false;
+    });
+});
+</script>
+
+<style>
+/* 북마크 버튼 스타일 */
+.bookmark-btn, .personal-word-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    background: transparent;
+}
+
+.bookmark-btn:hover, .personal-word-btn:hover {
+    transform: scale(1.1);
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* 북마크 버튼 활성화 상태 */
+.bookmark-btn[data-is-bookmarked="true"] {
+    background-color: rgba(255, 193, 7, 0.1);
+    border-color: #ffc107;
+}
+
+.bookmark-btn[data-is-bookmarked="true"]:hover {
+    background-color: rgba(255, 193, 7, 0.2);
+}
+
+/* 개인 단어장 버튼 활성화 상태 */
+.personal-word-btn[data-is-personal="true"] {
+    background-color: rgba(13, 110, 253, 0.1);
+    border-color: #0d6efd;
+}
+
+.personal-word-btn[data-is-personal="true"]:hover {
+    background-color: rgba(13, 110, 253, 0.2);
+}
+
+.bookmark-btn i, .personal-word-btn i {
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+}
+
+/* 알림 스타일 */
+.alert-container {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1050;
+    min-width: 300px;
+    max-width: 500px;
+}
+
+.alert {
+    margin-bottom: 0;
+    border: none;
+    border-radius: 8px;
+    animation: slideDown 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.alert-success {
+    background-color: #d4edda;
+    border-left: 4px solid #28a745;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    border-left: 4px solid #dc3545;
+}
+
+.alert i {
+    margin-right: 8px;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* 모바일 버전 스타일 */
+@media (max-width: 768px) {
+    .bookmark-btn, .personal-word-btn {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .bookmark-btn i, .personal-word-btn i {
+        font-size: 1rem;
+    }
+    
+    .alert-container {
+        min-width: 280px;
+        max-width: 90%;
+    }
+}
+</style>
+{% endblock %}
+
+{% endblock %} 

@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}퀴즈 목록 - TOEIC 단어 학습{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2 class="h4 mb-0">나만의 퀴즈 목록</h2>
+                    <a href="{% url 'quiz:quiz_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> 새 퀴즈 만들기
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if quizzes %}
+                    <div class="list-group">
+                        {% for quiz in quizzes %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between mb-2">
+                                <h5 class="mb-1">{{ quiz.title }}</h5>
+                                <small class="text-muted">{{ quiz.created_at|date:"Y-m-d" }}</small>
+                            </div>
+                            <p class="mb-1">{{ quiz.description }}</p>
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <div class="quiz-stats small text-muted">
+                                    <span class="me-3">
+                                        <i class="fas fa-question-circle"></i> {{ quiz.question_count }} 문제
+                                    </span>
+                                    <span class="me-3">
+                                        <i class="fas fa-users"></i> {{ quiz.attempt_count }} 회 시도됨
+                                    </span>
+                                    <span>
+                                        <i class="fas fa-star"></i> 평균 {{ quiz.average_score }}점
+                                    </span>
+                                </div>
+                                <div class="btn-group">
+                                    <a href="{% url 'quiz:quiz_detail' quiz.id %}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        상세보기
+                                    </a>
+                                    <a href="{% url 'quiz:quiz_start' quiz.id %}" 
+                                       class="btn btn-sm btn-success">
+                                        퀴즈 풀기
+                                    </a>
+                                    {% if quiz.created_by == request.user %}
+                                    <button onclick="deleteQuiz({{ quiz.id }})" 
+                                            class="btn btn-sm btn-outline-danger">
+                                        삭제
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <p class="text-muted">아직 생성된 퀴즈가 없습니다.</p>
+                        <a href="{% url 'quiz:quiz_create' %}" class="btn btn-primary">
+                            첫 퀴즈 만들기
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    function deleteQuiz(quizId) {
+        if (confirm('이 퀴즈를 삭제하시겠습니까?')) {
+            fetch(`/quiz/${quizId}/delete/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            }).then(response => {
+                if (response.ok) {
+                    location.reload();
+                }
+            });
+        }
+    }
+</script>
+{% endblock %}
+
+{% endblock %} 

@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% block title %}전체 오답노트{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    {% csrf_token %}
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 style="font-size: 2rem; font-weight: 800; color: #2c3e50; margin-bottom: 2rem; letter-spacing: -1px;">전체 오답노트</h2>
+                <span class="badge bg-primary" style="font-size:1.1rem; padding:0.7em 1.2em;">{{ notes|length }}개의 오답</span>
+            </div>
+            {% if notes %}
+            <div class="row g-3">
+                {% for note in notes %}
+                <div class="col-md-6">
+                    <div style="border-radius: 12px; background: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: 1px solid #e9ecef; transition: transform 0.15s ease; position: relative; overflow: hidden; margin-bottom: 1rem; padding: 1rem; display: flex; flex-direction: column; height: 100%;">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <span style="color: #2c3e50; font-weight: 600; font-size: 1.1rem; margin-bottom: 0.2rem;">
+                                    {{ note.word.korean }} / {{ note.word.english }}
+                                </span>
+                                {% if note.word.difficulty %}
+                                    <span style="font-size: 0.8rem; font-weight: 600; padding: 0.2em 0.8em; border-radius: 8px; margin-left: 0.7em; vertical-align: middle; display: inline-block; {% if note.word.difficulty == 'easy' %}background: #e3f2fd; color: #1976d2;{% elif note.word.difficulty == 'medium' %}background: #fff3e0; color: #f57c00;{% elif note.word.difficulty == 'hard' %}background: #ffebee; color: #d32f2f;{% endif %}">
+                                        {% if note.word.difficulty == 'easy' %}쉬움{% elif note.word.difficulty == 'medium' %}중간{% elif note.word.difficulty == 'hard' %}어려움{% else %}{{ note.word.difficulty }}{% endif %}
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <button class="btn btn-outline-success btn-sm mastered-btn" data-note-id="{{ note.id }}" style="padding: 0.3em 0.8em; font-size: 0.85rem; border-radius: 8px;">
+                                <i class="fas fa-check"></i> 마스터
+                            </button>
+                        </div>
+                        {% if note.word.example %}
+                        <div style="border-left: 3px solid #3498db; background: #f8fafc; padding: 0.8rem 1rem; border-radius: 0 8px 8px 0; font-size: 0.9rem; color: #34495e; margin-top: 0.8rem;">
+                            <i class="fas fa-quote-left me-1"></i>{{ note.word.example }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted text-center">아직 오답노트가 없습니다.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const masteredButtons = document.querySelectorAll('.mastered-btn');
+    
+    masteredButtons.forEach(button => {
+        button.addEventListener('click', async function() {
+            const noteId = this.dataset.noteId;
+            const card = this.closest('.col-md-6');
+            
+            try {
+                const response = await fetch(`/quiz/wrong-answers/${noteId}/toggle-mastered/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('서버 응답이 올바르지 않습니다.');
+                }
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    // 카드에 페이드아웃 효과 적용
+                    card.style.transition = 'opacity 0.5s ease-out';
+                    card.style.opacity = '0';
+                    
+                    // 애니메이션 완료 후 카드 제거
+                    setTimeout(() => {
+                        card.remove();
+                        
+                        // 남은 카드가 없으면 메시지 표시
+                        const remainingCards = document.querySelectorAll('.col-md-6');
+                        if (remainingCards.length === 0) {
+                            const container = document.querySelector('.row.g-3');
+                            container.innerHTML = '<p class="text-muted text-center">아직 오답노트가 없습니다.</p>';
+                        }
+                        
+                        // 오답 개수 업데이트
+                        const badge = document.querySelector('.badge');
+                        badge.textContent = `${remainingCards.length}개의 오답`;
+                    }, 500);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('오류가 발생했습니다. 다시 시도해주세요.');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
+{% endblock %} 

@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}데일리 미션 결과 - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="card">
+        <div class="card-body">
+            <h2 class="card-title text-center mb-4">데일리 미션 결과</h2>
+            
+            <div class="text-center mb-4">
+                <h3>점수: {{ daily_mission.score }}점</h3>
+                <p>정답 수: {{ correct_count }}/{{ total_questions }}</p>
+                <p>획득 포인트: {{ points_earned }}포인트</p>
+                <p>완료 시간: {{ daily_mission.completed_at|date:"Y-m-d H:i" }}</p>
+            </div>
+            
+            <div class="results">
+                {% for result in results %}
+                <div class="result-item mb-3 p-3 {% if result.is_correct %}bg-success-subtle{% else %}bg-danger-subtle{% endif %}">
+                    <h5>{{ result.word }}</h5>
+                    <p>정답: {{ result.correct_answer }}</p>
+                    <p>선택한 답: {{ result.selected_answer }}</p>
+                    <p class="{% if result.is_correct %}text-success{% else %}text-danger{% endif %}">
+                        {% if result.is_correct %}정답!{% else %}오답{% endif %}
+                    </p>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="text-center mt-4">
+                <a href="{% url 'accounts:home' %}" class="btn btn-primary">홈으로 돌아가기</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

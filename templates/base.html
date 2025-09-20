@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}TOEIC 단어 학습{% endblock %}</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    {% load static %}
+    <link href="{% static 'css/style.css' %}" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --dark-color: #2c3e50;
+            --light-color: #f8f9fa;
+            --gradient-primary: linear-gradient(45deg, #3498db, #2980b9);
+            --gradient-success: linear-gradient(45deg, #2ecc71, #27ae60);
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f8f9fa;
+            color: var(--dark-color);
+        }
+
+        .navbar {
+            background: var(--gradient-primary) !important;
+            box-shadow: var(--shadow-md);
+            padding: 0.8rem 0;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: white !important;
+            margin-right: 2rem;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.9) !important;
+            font-weight: 500;
+            padding: 0.5rem 0.8rem !important;
+            border-radius: 8px;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+
+        .nav-link:hover {
+            color: white !important;
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .nav-link.active {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white !important;
+        }
+
+        .container {
+            max-width: 1200px;
+            padding: 0 1.5rem;
+        }
+
+        .alert {
+            border-radius: 10px;
+            border: none;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 1rem;
+        }
+
+        .alert-success {
+            background: var(--gradient-success);
+            color: white;
+        }
+
+        .alert-info {
+            background: var(--gradient-primary);
+            color: white;
+        }
+
+        .btn {
+            border-radius: 8px;
+            padding: 0.5rem 1.5rem;
+            font-weight: 500;
+            transition: var(--transition);
+            border: none;
+        }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+        }
+
+        .btn-success {
+            background: var(--gradient-success);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .footer {
+            background: var(--gradient-primary);
+            color: white;
+            padding: 2rem 0;
+            margin-top: 4rem;
+        }
+
+        /* 다크 모드 스타일 */
+        .dark-mode {
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+
+        .dark-mode .navbar {
+            background: linear-gradient(45deg, #2c3e50, #34495e) !important;
+        }
+
+        .dark-mode .card {
+            background-color: #2c3e50;
+            border-color: #34495e;
+        }
+
+        .dark-mode .text-muted {
+            color: #95a5a6 !important;
+        }
+
+        /* PC 화면에서의 최소 너비 설정 */
+        @media (min-width: 992px) {
+            .navbar-nav {
+                gap: 0.5rem;
+            }
+            
+            .container-fluid {
+                max-width: 1800px;
+                margin: 0 auto;
+            }
+
+            .navbar-nav.mx-auto {
+                margin-left: auto !important;
+                margin-right: auto !important;
+                display: flex;
+                justify-content: center;
+                flex: 1;
+            }
+        }
+
+        /* 모바일 화면에서의 스타일 */
+        @media (max-width: 991px) {
+            .navbar-brand {
+                font-size: 1.2rem;
+                margin-right: 1rem;
+            }
+
+            .nav-link {
+                padding: 0.5rem 1rem !important;
+            }
+
+            .navbar-nav.mx-auto {
+                margin: 1rem 0;
+            }
+        }
+    </style>
+    {% if user.is_authenticated and user.profile.dark_mode %}
+    <script>
+        document.documentElement.classList.add('dark-mode');
+    </script>
+    {% endif %}
+</head>
+<body class="{% if user.is_authenticated and user.profile.dark_mode %}dark-mode{% endif %}">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand" href="{% if user.is_superuser %}{% url 'admin_home' %}{% else %}{% url 'accounts:home' %}{% endif %}">
+                <i class="fas fa-book-open me-2"></i>TOEIC 단어 학습
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav mx-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/vocabulary/words/' %}active{% endif %}" href="{% url 'vocabulary:word_list' %}">
+                            <i class="fas fa-book me-1"></i>단어장
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/quiz/' %}active{% endif %}" href="{% url 'quiz:quiz_home' %}">
+                            <i class="fas fa-question-circle me-1"></i>퀴즈
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/study/' %}active{% endif %}" href="{% url 'study:study_home' %}">
+                            <i class="fas fa-graduation-cap me-1"></i>학습관리
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/vocabulary/words/bookmarked/' %}active{% endif %}" href="{% url 'vocabulary:bookmarked_words' %}">
+                            <i class="fas fa-bookmark me-1"></i>즐겨찾기
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/vocabulary/personal/' or show_personal_only %}active{% endif %}" href="{% url 'vocabulary:personal_word_list' %}">
+                            <i class="fas fa-folder me-1"></i>개인 단어장
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/study/friends/' %}active{% endif %}" href="{% url 'study:friend_list' %}">
+                            <i class="fas fa-users me-1"></i>친구 목록
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:profile' %}">
+                                <i class="fas fa-user me-1"></i>{{ user.username }}님 (Lv.{{ user.profile.level }})
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:logout' %}">
+                                <i class="fas fa-sign-out-alt me-1"></i>로그아웃
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:login' %}">
+                                <i class="fas fa-sign-in-alt me-1"></i>로그인
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:signup' %}">
+                                <i class="fas fa-user-plus me-1"></i>회원가입
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Messages -->
+    {% if messages %}
+        <div class="container mt-3">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Main Content -->
+    <main class="container mt-4">
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container text-center">
+            <span>© 2024 TOEIC 단어 학습. All rights reserved.</span>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    {% block extra_js %}{% endblock %}
+</body>
+</html> 

@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}데일리 미션 완료{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">데일리 미션 완료</h4>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-4">
+                        <i class="fas fa-check-circle text-success" style="font-size: 5rem;"></i>
+                    </div>
+                    
+                    <h3 class="mb-4">오늘의 데일리 미션을 이미 완료하셨습니다!</h3>
+                    
+                    <div class="alert alert-info">
+                        <p class="mb-0">내일 다시 도전해주세요.</p>
+                    </div>
+
+                    <div class="mt-4">
+                        <a href="{% url 'accounts:home' %}" class="btn btn-primary">홈으로 돌아가기</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

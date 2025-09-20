@@ -1,0 +1,263 @@
+{% extends 'base.html' %}
+{% block title %}영어 → 한국어 객관식 테스트{% endblock %}
+{% block content %}
+<style>
+.quiz-option {
+    display: block;
+    width: 100%;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1rem;
+    background: white;
+    border: 2px solid #dee2e6;
+    border-radius: 12px;
+    text-align: left;
+    font-size: 1.1rem;
+    transition: all 0.2s;
+    cursor: pointer;
+    position: relative;
+}
+.quiz-option:hover {
+    border-color: #90caf9;
+    background: #f8f9fa;
+}
+.quiz-option.selected {
+    border-color: #0056b3;
+    background: #e3f2fd;
+}
+.quiz-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+}
+.quiz-option .option-text {
+    margin-left: 0.5rem;
+}
+.submit-btn {
+    position: relative;
+    overflow: hidden;
+    padding: 1rem 2rem;
+    font-size: 1.2rem;
+    font-weight: 600;
+    border-radius: 12px;
+    background: #28a745;
+    color: white;
+    border: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
+}
+.submit-btn:hover {
+    background: #218838;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(40, 167, 69, 0.3);
+}
+.submit-btn:active {
+    transform: translateY(0);
+}
+.submit-btn .spinner-border {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: none;
+}
+.submit-btn.loading {
+    color: transparent;
+}
+.submit-btn.loading .spinner-border {
+    display: inline-block;
+}
+.submit-btn.loading i {
+    display: none;
+}
+.question-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+.question-number {
+    color: #0056b3;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+.progress-bar {
+    height: 4px;
+    background: #e9ecef;
+    border-radius: 2px;
+    margin-bottom: 2rem;
+    overflow: hidden;
+}
+.progress-bar-fill {
+    height: 100%;
+    background: #0056b3;
+    width: 0;
+    transition: width 0.3s ease;
+}
+.grading-animation {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+.grading-animation.active {
+    display: flex;
+}
+.grading-content {
+    text-align: center;
+}
+.grading-spinner {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 1rem;
+}
+.grading-text {
+    font-size: 1.5rem;
+    color: #0056b3;
+    font-weight: 600;
+}
+</style>
+
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h4 mb-0">영어 → 한국어 객관식 테스트</h2>
+                </div>
+                <div class="card-body">
+                    <div class="progress-bar">
+                        <div class="progress-bar-fill" id="progressBar"></div>
+                    </div>
+                    
+                    <form method="post" id="quizForm">
+                        {% csrf_token %}
+                        <div id="questions">
+                            {% for q in questions %}
+                            <div class="question-block mb-4" data-qidx="{{ forloop.counter0 }}" style="display: {% if forloop.first %}block{% else %}none{% endif %};">
+                                <div class="mb-2 fw-bold">Q{{ forloop.counter }}. {{ q.question }}</div>
+                                <div class="options">
+                                    {% for option in q.options %}
+                                    <label class="quiz-option">
+                                        <input type="radio" name="answer_{{ forloop.parentloop.counter }}" value="{{ option }}" required>
+                                        <span class="option-text">{{ option }}</span>
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="text-center mt-4">
+                            <button type="button" class="btn btn-outline-secondary me-2" id="prevBtn" style="display: none;">
+                                <i class="fas fa-arrow-left me-2"></i>이전
+                            </button>
+                            <button type="button" class="submit-btn" id="nextBtn">
+                                다음<i class="fas fa-arrow-right ms-2"></i>
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="grading-animation" id="gradingAnimation">
+    <div class="grading-content">
+        <div class="spinner-border grading-spinner text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <div class="grading-text">채점 중...</div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const questions = document.querySelectorAll('.question-block');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const progressBar = document.getElementById('progressBar');
+    let currentQuestion = 1;
+    
+    function updateProgress() {
+        const progress = (currentQuestion / questions.length) * 100;
+        progressBar.style.width = `${progress}%`;
+    }
+    
+    function showQuestion(number) {
+        questions.forEach(q => q.style.display = 'none');
+        questions[number - 1].style.display = 'block';
+        
+        // 버튼 상태 업데이트
+        prevBtn.style.display = number === 1 ? 'none' : 'block';
+        nextBtn.textContent = number === questions.length ? '제출하기' : '다음';
+        nextBtn.innerHTML = number === questions.length ? 
+            '제출하기<i class="fas fa-check ms-2"></i>' : 
+            '다음<i class="fas fa-arrow-right ms-2"></i>';
+        
+        updateProgress();
+    }
+    
+    function selectOption(questionIndex, optionIndex) {
+        const question = questions[questionIndex];
+        const options = question.querySelectorAll('.quiz-option');
+        
+        // 모든 옵션의 선택 상태 제거
+        options.forEach(opt => {
+            opt.classList.remove('selected');
+            opt.querySelector('input[type="radio"]').checked = false;
+        });
+        
+        // 선택한 옵션 표시
+        options[optionIndex].classList.add('selected');
+        options[optionIndex].querySelector('input[type="radio"]').checked = true;
+    }
+    
+    // 각 옵션에 클릭 이벤트 리스너 추가
+    questions.forEach((question, qIndex) => {
+        const options = question.querySelectorAll('.quiz-option');
+        options.forEach((option, oIndex) => {
+            option.addEventListener('click', () => selectOption(qIndex, oIndex));
+        });
+    });
+    
+    prevBtn.addEventListener('click', () => {
+        if (currentQuestion > 1) {
+            currentQuestion--;
+            showQuestion(currentQuestion);
+        }
+    });
+    
+    nextBtn.addEventListener('click', () => {
+        if (currentQuestion < questions.length) {
+            currentQuestion++;
+            showQuestion(currentQuestion);
+        } else {
+            submitQuiz();
+        }
+    });
+    
+    function submitQuiz() {
+        // 제출 버튼 비활성화
+        nextBtn.classList.add('loading');
+        nextBtn.disabled = true;
+        
+        // 폼 제출
+        document.getElementById('quizForm').submit();
+    }
+    
+    // 초기 진행률 설정
+    updateProgress();
+});
+</script>
+{% endblock %}
+
+{% endblock %} 

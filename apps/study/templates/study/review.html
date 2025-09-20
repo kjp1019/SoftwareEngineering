@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}오답노트 복습 - TOEIC 단어 학습{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2>오답노트 복습</h2>
+                    <p class="text-muted">마스터하지 못한 단어들을 복습해보세요!</p>
+                </div>
+                {% if wrong_answer_notes %}
+                <div class="text-end">
+                    <div class="study-time mb-2">
+                        <span class="h4" id="study-timer">00:00:00</span>
+                    </div>
+                    <form action="{% url 'study:session_end' session.id %}" method="post" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-stop"></i> 학습 종료
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div id="review-cards" class="grid grid-cols-1 gap-4">
+                {% for note in wrong_answer_notes %}
+                    <div class="bg-white border rounded-lg shadow-sm p-4 review-card" data-note-id="{{ note.id }}">
+                        <div class="card-inner">
+                            <div class="card-front">
+                            <div class="card-content">
+                                <div class="word-container">
+                                    <h4 class="text-lg font-semibold text-center mb-2">{{ note.word.english }}</h4>
+                                    <p class="text-sm text-gray-500 text-center">카드를 클릭하여 의미 확인</p>
+                                </div>
+                            </div>
+                            </div>
+                            <div class="card-back">
+                            <div class="card-content">
+                                <div class="word-container">
+                                    <h4 class="text-lg font-semibold text-center mb-2">{{ note.word.korean }}</h4>
+                                    <p class="text-sm text-gray-500 text-center">카드를 클릭하여 단어 확인</p>
+                                </div>
+                            </div>
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                <div class="text-center py-8">
+                    <p class="text-gray-500">마스터하지 못한 단어가 없습니다!</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.review-card {
+    perspective: 1000px;
+    cursor: pointer;
+    min-height: 90px;
+    margin-bottom: 1rem;
+}
+
+.card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+}
+
+.review-card.flipped .card-inner {
+    transform: rotateY(180deg);
+}
+
+.card-front, .card-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.card-back {
+    transform: rotateY(180deg);
+}
+
+.card-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.word-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+.word-container h4 {
+    margin-bottom: 0.5rem;
+    font-size: 1.5rem;
+    color: #333;
+}
+
+.word-container p {
+    color: #666;
+    font-size: 0.875rem;
+    margin: 0;
+}
+
+.study-time {
+    font-family: monospace;
+    color: #333;
+}
+</style>
+
+<script>
+    // 오답노트 복습 카드 기능
+    document.querySelectorAll('.review-card').forEach(card => {
+        card.addEventListener('click', function() {
+            this.classList.toggle('flipped');
+        });
+    });
+
+    {% if wrong_answer_notes %}
+    // 학습 시간 타이머
+    let studyTimer;
+    let totalStudyTime = 0;  // 초 단위로 저장
+    let isPageActive = true;
+    const sessionId = '{{ session.id }}';
+    
+    // 타이머 시작
+    function startTimer() {
+        if (!studyTimer) {
+            studyTimer = setInterval(() => {
+                if (isPageActive) {
+                    totalStudyTime++;
+                    updateTimerDisplay();
+                    
+                    // 10초마다 서버에 시간 저장
+                    if (totalStudyTime % 10 === 0) {
+                        saveStudyTime();
+                    }
+                }
+            }, 1000);
+        }
+    }
+    
+    // 타이머 표시 업데이트
+    function updateTimerDisplay() {
+        const hours = Math.floor(totalStudyTime / 3600);
+        const minutes = Math.floor((totalStudyTime % 3600) / 60);
+        const seconds = totalStudyTime % 60;
+        
+        document.getElementById('study-timer').textContent = 
+            `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+    
+    // 학습 시간 서버 저장
+    function saveStudyTime() {
+        fetch('/study/save_study_time/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                session_id: sessionId,
+                study_time: totalStudyTime,
+                study_type: 'review'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                console.log('학습 시간이 저장되었습니다.');
+            }
+        })
+        .catch(error => {
+            console.error('학습 시간 저장 중 오류 발생:', error);
+        });
+    }
+    
+    // 페이지 포커스/블러 이벤트 처리
+    window.addEventListener('focus', function() {
+        isPageActive = true;
+        startTimer();
+    });
+    
+    window.addEventListener('blur', function() {
+        isPageActive = false;
+        saveStudyTime();  // 페이지를 벗어날 때 현재까지의 시간 저장
+    });
+    
+    // 페이지 로드 시 타이머 시작
+    document.addEventListener('DOMContentLoaded', function() {
+        startTimer();
+    });
+    
+    // 페이지를 나갈 때 학습 시간 저장
+    window.addEventListener('beforeunload', function() {
+        if (totalStudyTime > 0) {
+            fetch('/study/save_study_time/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    study_time: totalStudyTime,
+                    study_type: 'review'
+                })
+            });
+        }
+    });
+    {% endif %}
+</script>
+{% endblock %} 

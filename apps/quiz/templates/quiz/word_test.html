@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}단어 테스트{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">단어 테스트</h5>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="bookmarkedOnly" 
+                                   {% if bookmarked_only %}checked{% endif %}>
+                            <label class="form-check-label" for="bookmarkedOnly">북마크된 단어만</label>
+                        </div>
+                    </div>
+                    <div class="progress mt-2" style="height: 5px;">
+                        <div class="progress-bar" role="progressbar" style="width: 0%" id="progressBar"></div>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <form method="post" id="testForm">
+                        {% csrf_token %}
+                        {% for question in questions %}
+                        <div class="question-container" id="question{{ question.id }}" 
+                             style="display: {% if forloop.first %}block{% else %}none{% endif %};">
+                            <h5 class="card-title mb-4">
+                                {% if question.type == 'en_to_ko' %}
+                                다음 영단어의 뜻을 한글로 입력하세요:
+                                <div class="h3 mt-3">{{ question.question }}</div>
+                                {% else %}
+                                다음 단어의 영어를 입력하세요:
+                                <div class="h3 mt-3">{{ question.question }}</div>
+                                {% endif %}
+                            </h5>
+                            
+                            <input type="hidden" name="question_{{ forloop.counter0 }}" value="{{ question.word_id }}">
+                            <input type="hidden" name="correct_{{ forloop.counter0 }}" value="{{ question.answer }}">
+                            
+                            <div class="form-group">
+                                <input type="text" class="form-control form-control-lg" 
+                                       name="answer_{{ forloop.counter0 }}" 
+                                       placeholder="답을 입력하세요" required>
+                            </div>
+                            
+                            <div class="mt-4">
+                                {% if not forloop.last %}
+                                <button type="button" class="btn btn-primary" 
+                                        onclick="nextQuestion({{ question.id }}, {{ question.id|add:1 }})">
+                                    다음 문제
+                                </button>
+                                {% else %}
+                                <button type="submit" class="btn btn-success">
+                                    테스트 완료
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentQuestion = 1;
+const totalQuestions = {{ questions|length }};
+
+function updateProgress() {
+    const progress = (currentQuestion / totalQuestions) * 100;
+    document.getElementById('progressBar').style.width = progress + '%';
+}
+
+function nextQuestion(currentId, nextId) {
+    document.getElementById('question' + currentId).style.display = 'none';
+    document.getElementById('question' + nextId).style.display = 'block';
+    currentQuestion++;
+    updateProgress();
+}
+
+// 북마크된 단어만 테스트 옵션 변경 시 페이지 새로고침
+document.getElementById('bookmarkedOnly').addEventListener('change', function() {
+    const isChecked = this.checked;
+    window.location.href = `?bookmarked=${isChecked}`;
+});
+
+// 초기 진행률 설정
+updateProgress();
+</script>
+{% endblock %} 

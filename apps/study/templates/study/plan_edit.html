@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}학습 계획 수정{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">학습 계획 수정</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="title" class="form-label">계획 제목</label>
+                            <input type="text" class="form-control" id="title" name="title" value="{{ plan.title }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="target_words_per_day" class="form-label">하루 학습할 단어 수</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="target_words_per_day" name="target_words_per_day" 
+                                       value="{{ plan.target_words_per_day }}" min="1" max="100" required>
+                                <span class="input-group-text">개</span>
+                            </div>
+                            <div class="form-text">1~100개 사이의 숫자를 입력하세요.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="target_study_time" class="form-label">하루 학습 시간</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="target_study_time" name="target_study_time" 
+                                       value="{{ plan.target_study_time }}" min="5" max="180" required>
+                                <span class="input-group-text">분</span>
+                            </div>
+                            <div class="form-text">5~180분 사이의 숫자를 입력하세요.</div>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">수정하기</button>
+                            <a href="{% url 'study:plan_detail' plan.id %}" class="btn btn-secondary">취소</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,333 @@
+{% extends 'base.html' %}
+{% block title %}한국어 → 영어 객관식 테스트{% endblock %}
+{% block content %}
+<style>
+.quiz-option {
+    display: flex;
+    align-items: center;
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1rem;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 1.1rem;
+    position: relative;
+}
+
+.quiz-option:hover {
+    background: #e3f0ff;
+    border-color: #90caf9;
+}
+
+.quiz-option.selected {
+    background: #1976d2;
+    color: #fff;
+    border-color: #1976d2;
+    box-shadow: 0 0 0 2px #1976d233;
+}
+
+.quiz-option.selected .checkmark {
+    display: inline-block;
+}
+
+.checkmark {
+    display: none;
+    margin-left: auto;
+    color: #fff;
+    font-size: 1.5rem;
+}
+
+.radio-input {
+    display: none;
+}
+
+.quiz-option input[type="radio"] {
+    display: none;
+}
+
+.quiz-option input[type="radio"]:checked + label {
+    color: #0056b3;
+    font-weight: 600;
+}
+
+.quiz-option input[type="radio"]:checked + .quiz-option {
+    border-color: #0056b3;
+    background: #e3f0ff;
+}
+
+.quiz-option label {
+    margin: 0;
+    cursor: pointer;
+    width: 100%;
+    display: block;
+    font-size: 1.1rem;
+    padding-left: 1.5rem;
+    position: relative;
+}
+
+.quiz-option label::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    border: 2px solid #dee2e6;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.quiz-option.selected label::before {
+    border-color: #0056b3;
+    background: #0056b3;
+    box-shadow: inset 0 0 0 4px white;
+}
+
+.submit-btn {
+    position: relative;
+    overflow: hidden;
+    padding: 1rem 2rem;
+    font-size: 1.2rem;
+    font-weight: 600;
+    border-radius: 12px;
+    background: #28a745;
+    color: white;
+    border: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
+}
+
+.submit-btn:hover {
+    background: #218838;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(40, 167, 69, 0.3);
+}
+
+.submit-btn:active {
+    transform: translateY(0);
+}
+
+.submit-btn .spinner-border {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: none;
+}
+
+.submit-btn.loading {
+    color: transparent;
+}
+
+.submit-btn.loading .spinner-border {
+    display: inline-block;
+}
+
+.submit-btn.loading i {
+    display: none;
+}
+
+.question-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.question-number {
+    color: #0056b3;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.progress-bar {
+    height: 4px;
+    background: #e9ecef;
+    border-radius: 2px;
+    margin-bottom: 2rem;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: #0056b3;
+    width: 0;
+    transition: width 0.3s ease;
+}
+
+.grading-animation {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.grading-animation.active {
+    display: flex;
+}
+
+.grading-content {
+    text-align: center;
+}
+
+.grading-spinner {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 1rem;
+}
+
+.grading-text {
+    font-size: 1.5rem;
+    color: #0056b3;
+    font-weight: 600;
+}
+</style>
+
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h4 mb-0">한국어 → 영어 객관식 테스트</h2>
+                </div>
+                <div class="card-body">
+                    <div class="progress-bar">
+                        <div class="progress-bar-fill" id="progressBar"></div>
+                    </div>
+                    
+                    <form method="post" id="quizForm">
+                        {% csrf_token %}
+                        <div id="questions">
+                            {% for q in questions %}
+                            <div class="question-block mb-4" data-qidx="{{ forloop.counter0 }}" style="display: {% if forloop.first %}block{% else %}none{% endif %};">
+                                <div class="mb-2 fw-bold">Q{{ forloop.counter }}. {{ q.question }}</div>
+                                <!--정답보여지는 코드-->
+                                <!--<div class="mb-3 text-muted">({{ q.answer }})</div>-->
+                                <div class="options">
+                                    {% for opt in q.options %}
+                                    <div class="quiz-option">
+                                        <input type="radio" name="answer_{{ forloop.parentloop.counter }}" value="{{ opt }}" class="radio-input">
+                                        <span>{{ opt }}</span>
+                                        <span class="checkmark"><i class="fas fa-check-circle"></i></span>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="text-center mt-4">
+                            <button type="button" class="btn btn-outline-secondary me-2" id="prevBtn" style="display: none;">
+                                <i class="fas fa-arrow-left me-2"></i>이전
+                            </button>
+                            <button type="button" class="submit-btn" id="nextBtn">
+                                다음<i class="fas fa-arrow-right ms-2"></i>
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="grading-animation" id="gradingAnimation">
+    <div class="grading-content">
+        <div class="spinner-border grading-spinner text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <div class="grading-text">채점 중...</div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const questions = document.querySelectorAll('.question-block');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const progressBar = document.getElementById('progressBar');
+    let currentQuestion = 1;
+    
+    function updateProgress() {
+        const progress = (currentQuestion / questions.length) * 100;
+        progressBar.style.width = `${progress}%`;
+    }
+    
+    function showQuestion(number) {
+        questions.forEach(q => q.style.display = 'none');
+        questions[number - 1].style.display = 'block';
+        
+        // 버튼 상태 업데이트
+        prevBtn.style.display = number === 1 ? 'none' : 'block';
+        nextBtn.textContent = number === questions.length ? '제출하기' : '다음';
+        nextBtn.innerHTML = number === questions.length ? 
+            '제출하기<i class="fas fa-check ms-2"></i>' : 
+            '다음<i class="fas fa-arrow-right ms-2"></i>';
+        
+        updateProgress();
+    }
+    
+    // 각 옵션에 클릭 이벤트 리스너 추가
+    document.querySelectorAll('.quiz-option').forEach((option) => {
+        option.addEventListener('click', function() {
+            const questionBlock = this.closest('.question-block');
+            const options = questionBlock.querySelectorAll('.quiz-option');
+            
+            // 모든 옵션의 선택 상태 제거
+            options.forEach(opt => {
+                opt.classList.remove('selected');
+                const radio = opt.querySelector('input[type="radio"]');
+                if (radio) radio.checked = false;
+            });
+            
+            // 선택한 옵션 활성화
+            this.classList.add('selected');
+            const radio = this.querySelector('input[type="radio"]');
+            if (radio) radio.checked = true;
+        });
+    });
+    
+    prevBtn.addEventListener('click', () => {
+        if (currentQuestion > 1) {
+            currentQuestion--;
+            showQuestion(currentQuestion);
+        }
+    });
+    
+    nextBtn.addEventListener('click', () => {
+        if (currentQuestion < questions.length) {
+            currentQuestion++;
+            showQuestion(currentQuestion);
+        } else {
+            submitQuiz();
+        }
+    });
+    
+    function submitQuiz() {
+        // 제출 버튼 비활성화
+        nextBtn.classList.add('loading');
+        nextBtn.disabled = true;
+        
+        // 폼 제출
+        document.getElementById('quizForm').submit();
+    }
+    
+    // 초기 진행률 설정
+    updateProgress();
+});
+</script>
+{% endblock %}
+
+{% endblock %} 

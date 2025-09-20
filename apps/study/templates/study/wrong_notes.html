@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}오답 노트{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">오답 노트</h2>
+
+    <!-- 디버그 정보 -->
+    <div class="alert alert-info mb-4">
+        <p>데이터 상태: {{ has_wrong_answers|yesno:"있음,없음" }}</p>
+        <p>틀린 단어 수: {{ wrong_answers_count }}개</p>
+        {% if wrong_answers.0 %}
+            <p>첫 번째 단어: {{ wrong_answers.0.word__english }} - {{ wrong_answers.0.word__korean }}</p>
+            <p>틀린 횟수: {{ wrong_answers.0.wrong_count }}회</p>
+            <p>마지막 시도: {{ wrong_answers.0.last_attempt|date:"Y-m-d H:i" }}</p>
+        {% endif %}
+    </div>
+
+    <!-- 테이블 -->
+    {% if wrong_answers_count > 0 %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">영어</th>
+                        <th scope="col">한국어</th>
+                        <th scope="col">틀린 횟수</th>
+                        <th scope="col">마지막 시도</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for answer in wrong_answers %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ answer.word__english }}</td>
+                            <td>{{ answer.word__korean }}</td>
+                            <td>{{ answer.wrong_count }}회</td>
+                            <td>{{ answer.last_attempt|date:"Y-m-d H:i" }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-warning">
+            <h4 class="alert-heading">아직 틀린 문제가 없습니다!</h4>
+            <p>퀴즈를 풀어보면서 학습을 시작해보세요.</p>
+            <hr>
+            <p class="mb-0">
+                <a href="{% url 'quiz:quiz_home' %}" class="btn btn-primary">퀴즈 풀기</a>
+            </p>
+        </div>
+    {% endif %}
+
+    <!-- 디버그 정보 -->
+    <div class="alert alert-secondary mt-4">
+        <h5>전체 데이터:</h5>
+        <div class="small">
+            {% for answer in wrong_answers %}
+                <div class="mb-2">
+                    {{ answer.word__english }} - {{ answer.word__korean }} 
+                    (틀린 횟수: {{ answer.wrong_count }}회, 
+                    마지막 시도: {{ answer.last_attempt|date:"Y-m-d H:i" }})
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-body">
+            <h2 class="card-title">{{ word.english }}</h2>
+            <p class="card-text">{{ word.korean }}</p>
+            
+            {% if word_audio %}
+            <button class="btn btn-primary mb-3" onclick="playAudio('{{ word_audio }}')">
+                <i class="fas fa-volume-up"></i> 단어 발음 듣기
+            </button>
+            {% endif %}
+            
+            {% if word.example %}
+            <div class="mt-3">
+                <h5>예문</h5>
+                <p>{{ word.example }}</p>
+                {% if example_audio %}
+                <button class="btn btn-secondary" onclick="playAudio('{{ example_audio }}')">
+                    <i class="fas fa-volume-up"></i> 예문 발음 듣기
+                </button>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function playAudio(audioPath) {
+    const audio = new Audio(audioPath);
+    audio.play();
+}
+</script>
+{% endblock %} 

@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ quiz.title }} - 문제 {{ question_number }}/{{ total_questions }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">{{ quiz.title }}</h5>
+                        <div class="text-muted">
+                            문제 {{ question_number }}/{{ total_questions }}
+                            {% if quiz.time_limit %}
+                            <span id="timer" class="ms-3"></span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="progress mt-2" style="height: 5px;">
+                        <div class="progress-bar" role="progressbar" 
+                             style="width: {{ question_number|div:total_questions|mul:100 }}%"></div>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <h5 class="card-title mb-4">
+                        {% if quiz.quiz_type == 'en_to_ko' %}
+                        다음 영단어의 뜻을 한글로 입력하세요:
+                        <div class="h3 mt-3">{{ question.word.english }}</div>
+                        {% elif quiz.quiz_type == 'ko_to_en' %}
+                        다음 단어의 영어를 입력하세요:
+                        <div class="h3 mt-3">{{ question.word.korean }}</div>
+                        {% elif quiz.quiz_type == 'multiple' %}
+                        다음 영단어의 뜻으로 알맞은 것을 고르세요:
+                        <div class="h3 mt-3">{{ question.word.english }}</div>
+                        {% endif %}
+                    </h5>
+                    
+                    <form method="post" id="quizForm">
+                        {% csrf_token %}
+                        <input type="hidden" name="question_id" value="{{ question.id }}">
+                        <input type="hidden" name="end_time" value="{{ end_time|date:'c' }}">
+                        
+                        {% if quiz.quiz_type == 'multiple' %}
+                        <div class="list-group">
+                            {% for option in question.get_options %}
+                            <label class="list-group-item">
+                                <input type="radio" name="answer" value="{{ forloop.counter }}" 
+                                       class="form-check-input me-2" required>
+                                {{ option }}
+                            </label>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="mb-3">
+                            <input type="text" class="form-control form-control-lg" 
+                                   name="answer" required autocomplete="off" 
+                                   placeholder="답을 입력하세요">
+                        </div>
+                        {% endif %}
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                {% if question_number == total_questions %}
+                                제출하기
+                                {% else %}
+                                다음 문제
+                                {% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if quiz.time_limit %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var endTime = new Date('{{ end_time|date:"c" }}');
+    
+    function updateTimer() {
+        var now = new Date();
+        var diff = endTime - now;
+        
+        if (diff <= 0) {
+            document.getElementById('quizForm').submit();
+            return;
+        }
+        
+        var minutes = Math.floor(diff / 60000);
+        var seconds = Math.floor((diff % 60000) / 1000);
+        
+        document.getElementById('timer').textContent = 
+            '남은 시간: ' + minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+    }
+    
+    updateTimer();
+    setInterval(updateTimer, 1000);
+});
+</script>
+{% endif %}
+{% endblock %} 

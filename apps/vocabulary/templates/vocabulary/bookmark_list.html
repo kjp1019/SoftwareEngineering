@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}북마크 - TOEIC 단어 학습{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="h4 mb-0">북마크한 단어</h2>
+                </div>
+                
+                <div class="card-body">
+                    <!-- 검색 -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <form method="get" class="d-flex">
+                                <input type="text" name="search" class="form-control me-2" 
+                                       placeholder="단어 검색" value="{{ request.GET.search }}">
+                                <button type="submit" class="btn btn-outline-primary">검색</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- 북마크 단어 목록 -->
+                    {% if bookmarked_words %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>영단어</th>
+                                    <th>의미</th>
+                                    <th>난이도</th>
+                                    <th>학습 상태</th>
+                                    <th>액션</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for word in bookmarked_words %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {{ word.english }}
+                                            <button class="btn btn-sm btn-link" onclick="speakText('{{ word.english }}')">
+                                                <i class="fas fa-volume-up"></i>
+                                            </button>
+                                            <i class="fas fa-star text-warning ms-2"></i>
+                                        </div>
+                                        <small class="text-muted">[{{ word.part_of_speech }}]</small>
+                                    </td>
+                                    <td>{{ word.korean }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ word.get_difficulty_color }}">
+                                            {{ word.get_difficulty_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if word.study_progress %}
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar" role="progressbar" 
+                                                 style="width: {{ word.study_progress.proficiency|mul:20 }}%">
+                                                {{ word.study_progress.proficiency }}/5
+                                            </div>
+                                        </div>
+                                        {% else %}
+                                        <span class="text-muted">미학습</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="{% url 'vocabulary:word_detail' word.id %}" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                상세
+                                            </a>
+                                            <a href="{% url 'vocabulary:toggle_bookmark' word.id %}" 
+                                               class="btn btn-sm btn-outline-warning">
+                                                북마크 해제
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 페이지네이션 -->
+                    {% if bookmarked_words.has_other_pages %}
+                    <nav aria-label="북마크 목록 페이지 네비게이션">
+                        <ul class="pagination justify-content-center">
+                            {% if bookmarked_words.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ bookmarked_words.previous_page_number }}">이전</a>
+                            </li>
+                            {% endif %}
+
+                            {% for num in bookmarked_words.paginator.page_range %}
+                            <li class="page-item {% if bookmarked_words.number == num %}active{% endif %}">
+                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                            </li>
+                            {% endfor %}
+
+                            {% if bookmarked_words.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ bookmarked_words.next_page_number }}">다음</a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                    {% else %}
+                    <p class="text-center text-muted">북마크한 단어가 없습니다.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+// 단어 발음 재생
+function speakText(text) {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    window.speechSynthesis.speak(utterance);
+}
+</script>
+{% endblock %}
+
+{% endblock %} 

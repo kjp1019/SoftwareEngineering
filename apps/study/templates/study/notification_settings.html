@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}알림 설정 - TOEIC 단어 학습{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="h4 mb-0">알림 설정</h2>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <h5>학습 알림</h5>
+                            <div class="form-check mb-2">
+                                <input type="checkbox" class="form-check-input" id="daily_reminder" 
+                                       name="daily_reminder" {% if settings.daily_reminder %}checked{% endif %}>
+                                <label class="form-check-label" for="daily_reminder">
+                                    매일 학습 알림 받기
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input type="checkbox" class="form-check-input" id="review_reminder" 
+                                       name="review_reminder" {% if settings.review_reminder %}checked{% endif %}>
+                                <label class="form-check-label" for="review_reminder">
+                                    복습 시점 알림 받기
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <h5>알림 시간</h5>
+                            <div class="mb-3">
+                                <label for="reminder_time" class="form-label">하루 학습 알림 시간</label>
+                                <input type="time" class="form-control" id="reminder_time" 
+                                       name="reminder_time" value="{{ settings.reminder_time|time:'H:i' }}">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <h5>이메일 알림</h5>
+                            <div class="form-check mb-2">
+                                <input type="checkbox" class="form-check-input" id="email_notifications" 
+                                       name="email_notifications" {% if settings.email_notifications %}checked{% endif %}>
+                                <label class="form-check-label" for="email_notifications">
+                                    이메일로도 알림 받기
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <h5>진도 알림</h5>
+                            <div class="form-check mb-2">
+                                <input type="checkbox" class="form-check-input" id="progress_notifications" 
+                                       name="progress_notifications" {% if settings.progress_notifications %}checked{% endif %}>
+                                <label class="form-check-label" for="progress_notifications">
+                                    학습 진도 알림 받기
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> 설정 저장
+                            </button>
+                            <a href="{% url 'study:notifications' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> 알림 목록으로 돌아가기
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

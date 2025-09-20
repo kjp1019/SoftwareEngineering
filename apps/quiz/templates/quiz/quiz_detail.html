@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ quiz.title }} - 퀴즈 상세{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <h2 class="mb-4">{{ quiz.title }}</h2>
+            
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">퀴즈 정보</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>작성자:</strong> {{ quiz.created_by.username }}</p>
+                            <p><strong>생성일:</strong> {{ quiz.created_at|date:"Y-m-d H:i" }}</p>
+                            <p><strong>문제 수:</strong> {{ quiz.question_count }}개</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>퀴즈 유형:</strong> {{ quiz.get_quiz_type_display }}</p>
+                            <p><strong>난이도:</strong> {{ quiz.get_difficulty_display }}</p>
+                            <p><strong>제한 시간:</strong> {% if quiz.time_limit %}{{ quiz.time_limit }}분{% else %}제한 없음{% endif %}</p>
+                        </div>
+                    </div>
+                    
+                    {% if quiz.description %}
+                    <hr>
+                    <h6>설명</h6>
+                    <p class="card-text">{{ quiz.description|linebreaks }}</p>
+                    {% endif %}
+                    
+                    {% if quiz.created_by == user %}
+                    <div class="mt-3">
+                        <form method="post" action="{% url 'quiz:quiz_delete' quiz.id %}" 
+                              onsubmit="return confirm('정말로 이 퀴즈를 삭제하시겠습니까?');" 
+                              style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-sm">삭제</button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-start mb-4">
+                <a href="{% url 'quiz:quiz_start' quiz.id %}" class="btn btn-primary me-md-2">
+                    퀴즈 시작하기
+                </a>
+                <a href="{% url 'quiz:quiz_list' %}" class="btn btn-secondary">
+                    목록으로 돌아가기
+                </a>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">내 응시 기록</h5>
+                </div>
+                <div class="card-body">
+                    {% if user_attempts %}
+                        <div class="list-group list-group-flush">
+                        {% for attempt in user_attempts %}
+                            <a href="{% url 'quiz:quiz_history_detail' attempt.id %}" 
+                               class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">점수: {{ attempt.score }}점</h6>
+                                    <small>{{ attempt.completed_at|date:"Y-m-d H:i" }}</small>
+                                </div>
+                                <p class="mb-1">맞은 문제: {{ attempt.correct_answers }}/{{ attempt.total_questions }}</p>
+                                <small>정답률: {{ attempt.accuracy_rate|floatformat:1 }}%</small>
+                            </a>
+                        {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0">아직 응시 기록이 없습니다.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

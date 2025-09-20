@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}즐겨찾기 단어 주관식 퀴즈 - TOEIC 단어 학습{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h2 class="h4 mb-0">즐겨찾기 단어 주관식 퀴즈</h2>
+                        <div class="text-muted">
+                            <span id="currentQuestion">1</span> / {{ questions|length }}
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form id="quizForm">
+                        {% csrf_token %}
+                        <div id="questions">
+                            {% for question in questions %}
+                            <div class="question" data-question-id="{{ forloop.counter }}" style="display: {% if forloop.first %}block{% else %}none{% endif %};">
+                                <div class="mb-4">
+                                    <h3 class="h5 mb-3">{{ question.question }}</h3>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control form-control-lg" 
+                                               name="answer_{{ question.word_id }}"
+                                               placeholder="답을 입력하세요"
+                                               autocomplete="off">
+                                    </div>
+                                </div>
+                                <input type="hidden" name="correct_answer_{{ question.word_id }}" value="{{ question.answer }}">
+                                <input type="hidden" name="word_id_{{ question.word_id }}" value="{{ question.word_id }}">
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <button type="button" class="btn btn-outline-secondary" id="prevBtn" style="display: none;">
+                                <i class="fas fa-arrow-left me-2"></i>이전
+                            </button>
+                            <button type="button" class="btn btn-primary" id="nextBtn">
+                                다음<i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const questions = document.querySelectorAll('.question');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const currentQuestionSpan = document.getElementById('currentQuestion');
+    let currentQuestion = 1;
+    
+    function showQuestion(number) {
+        questions.forEach(q => q.style.display = 'none');
+        questions[number - 1].style.display = 'block';
+        currentQuestionSpan.textContent = number;
+        
+        // 현재 문제의 입력 필드에 포커스
+        const currentInput = questions[number - 1].querySelector('input[type="text"]');
+        currentInput.focus();
+        
+        // 버튼 상태 업데이트
+        prevBtn.style.display = number === 1 ? 'none' : 'block';
+        nextBtn.textContent = number === questions.length ? '제출하기' : '다음';
+        nextBtn.innerHTML = number === questions.length ? 
+            '제출하기<i class="fas fa-check ms-2"></i>' : 
+            '다음<i class="fas fa-arrow-right ms-2"></i>';
+    }
+    
+    prevBtn.addEventListener('click', () => {
+        if (currentQuestion > 1) {
+            currentQuestion--;
+            showQuestion(currentQuestion);
+        }
+    });
+    
+    nextBtn.addEventListener('click', () => {
+        if (currentQuestion < questions.length) {
+            currentQuestion++;
+            showQuestion(currentQuestion);
+        } else {
+            submitQuiz();
+        }
+    });
+    
+    // Enter 키로 다음 문제로 이동
+    document.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (currentQuestion < questions.length) {
+                currentQuestion++;
+                showQuestion(currentQuestion);
+            } else {
+                submitQuiz();
+            }
+        }
+    });
+    
+    function submitQuiz() {
+        // 제출 버튼 비활성화
+        nextBtn.disabled = true;
+        nextBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>제출 중...';
+        
+        const answers = [];
+        questions.forEach(question => {
+            const wordId = question.querySelector('input[name^="word_id_"]').value;
+            const userAnswer = question.querySelector('input[type="text"]').value;
+            const correctAnswer = question.querySelector('input[name^="correct_answer_"]').value;
+            
+            answers.push({
+                word_id: wordId,
+                user_answer: userAnswer,
+                correct_answer: correctAnswer
+            });
+        });
+        
+        fetch('{% url "quiz:bookmark_typing" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({ answers: answers })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = `/quiz/history/${data.attempt_id}/`;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('퀴즈 제출 중 오류가 발생했습니다.');
+            // 오류 발생 시 버튼 다시 활성화
+            nextBtn.disabled = false;
+            nextBtn.innerHTML = '제출하기<i class="fas fa-check ms-2"></i>';
+        });
+    }
+});
+</script>
+
+<style>
+.form-control {
+    font-size: 1.1rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    border: 2px solid #dee2e6;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.form-control::placeholder {
+    color: #adb5bd;
+}
+</style>
+{% endblock %}
+
+{% endblock %} 

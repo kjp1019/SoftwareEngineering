@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}퀴즈 만들기{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">새 퀴즈 만들기</h2>
+    
+    <form method="post" class="needs-validation" novalidate>
+        {% csrf_token %}
+        
+        <div class="mb-3">
+            <label for="title" class="form-label">퀴즈 제목</label>
+            <input type="text" class="form-control" id="title" name="title" required>
+            <div class="invalid-feedback">
+                퀴즈 제목을 입력해주세요.
+            </div>
+        </div>
+        
+        <div class="mb-3">
+            <label for="description" class="form-label">설명</label>
+            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+        </div>
+        
+        <div class="mb-3">
+            <label for="quiz_type" class="form-label">퀴즈 유형</label>
+            <select class="form-select" id="quiz_type" name="quiz_type" required>
+                {% for type_code, type_name in quiz_types %}
+                <option value="{{ type_code }}">{{ type_name }}</option>
+                {% endfor %}
+            </select>
+            <div class="invalid-feedback">
+                퀴즈 유형을 선택해주세요.
+            </div>
+        </div>
+        
+        <div class="mb-3">
+            <label for="difficulty" class="form-label">난이도</label>
+            <select class="form-select" id="difficulty" name="difficulty" required>
+                {% for diff_code, diff_name in difficulties %}
+                <option value="{{ diff_code }}">{{ diff_name }}</option>
+                {% endfor %}
+            </select>
+            <div class="invalid-feedback">
+                난이도를 선택해주세요.
+            </div>
+        </div>
+        
+        <div class="mb-3">
+            <label for="word_count" class="form-label">문제 수</label>
+            <input type="number" class="form-control" id="word_count" name="word_count" 
+                   value="10" min="5" max="50" required>
+            <div class="invalid-feedback">
+                5개에서 50개 사이의 문제 수를 입력해주세요.
+            </div>
+        </div>
+        
+        <div class="mb-3">
+            <label for="time_limit" class="form-label">제한 시간 (분)</label>
+            <input type="number" class="form-control" id="time_limit" name="time_limit" 
+                   value="0" min="0" max="120">
+            <small class="form-text text-muted">0을 입력하면 제한 시간이 없습니다.</small>
+        </div>
+        
+        <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="is_public" name="is_public" checked>
+            <label class="form-check-label" for="is_public">공개 퀴즈로 설정</label>
+        </div>
+        
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+            <a href="{% url 'quiz:quiz_list' %}" class="btn btn-secondary me-md-2">취소</a>
+            <button type="submit" class="btn btn-primary">퀴즈 만들기</button>
+        </div>
+    </form>
+</div>
+
+{% block extra_js %}
+<script>
+// 폼 유효성 검사
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+</script>
+{% endblock %}
+{% endblock %} 

@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block title %}학습 세션 상세 - TOEIC 단어 학습{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h2 class="h4 mb-0">학습 세션 상세</h2>
+                        {% if not session.end_time %}
+                        <form action="{% url 'study:session_end' session.id %}" method="post" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-warning">
+                                학습 종료
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5 class="h6 text-muted">학습 계획</h5>
+                            <p class="h5">{{ session.study_plan.title }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="h6 text-muted">학습 유형</h5>
+                            <p class="h5">{{ session.get_study_type_display }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5 class="h6 text-muted">시작 시간</h5>
+                            <p class="h5">{{ session.start_time|date:"Y/m/d H:i" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="h6 text-muted">학습 시간</h5>
+                            <p class="h5">
+                                {% if session.end_time %}
+                                    {{ session.get_duration_display }}
+                                {% else %}
+                                    <span class="badge bg-warning">진행 중</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5 class="h6 text-muted">학습한 단어</h5>
+                            <p class="h5">{{ session.get_studied_words_count }}개</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="h6 text-muted">평균 숙련도</h5>
+                            <div class="progress" style="height: 25px;">
+                                <div class="progress-bar" role="progressbar"
+                                     style="width: {{ session.get_average_proficiency|default:0|floatformat:1 }}%"
+                                     aria-valuenow="{{ session.get_average_proficiency|default:0 }}"
+                                     aria-valuemin="0" aria-valuemax="5">
+                                    {{ session.get_average_proficiency|default:0|floatformat:1 }}/5
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h5 class="mb-3">학습한 단어 목록</h5>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>단어</th>
+                                    <th>의미</th>
+                                    <th>숙련도</th>
+                                    <th>북마크</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for progress in session.progress.all %}
+                                <tr>
+                                    <td>{{ progress.word.english }}</td>
+                                    <td>{{ progress.word.korean }}</td>
+                                    <td>
+                                        <div class="progress">
+                                            <div class="progress-bar" role="progressbar"
+                                                 style="width: {{ progress.proficiency|default:0 }}%"
+                                                 aria-valuenow="{{ progress.proficiency }}"
+                                                 aria-valuemin="0" aria-valuemax="5">
+                                                {{ progress.proficiency }}/5
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <form method="post" action="{% url 'study:bookmark_toggle' progress.word.id %}"
+                                              class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm {% if progress.is_bookmarked %}btn-warning{% else %}btn-outline-warning{% endif %}">
+                                                {% if progress.is_bookmarked %}★{% else %}☆{% endif %}
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'study:plan_detail' session.study_plan.id %}" 
+                           class="btn btn-secondary">
+                            학습 계획으로 돌아가기
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

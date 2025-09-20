@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ friend.username }}님의 단어장{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* 네비게이션 바 스타일 */
+    .navbar {
+        background-color: #ffffff;
+        box-shadow: 0 2px 4px rgba(0,0,0,.1);
+        padding: 1rem;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+    }
+
+    .navbar-brand {
+        font-weight: bold;
+        color: #333;
+    }
+
+    .nav-link {
+        color: #666;
+        transition: color 0.2s;
+    }
+
+    .nav-link:hover {
+        color: #007bff;
+    }
+
+    /* 단어장 컨테이너 */
+    .vocabulary-container {
+        padding: 2rem 0;
+    }
+
+    /* 검색 및 정렬 섹션 */
+    .search-sort-section {
+        margin-bottom: 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .search-box {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .sort-options {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    /* 단어 카드 */
+    .word-card {
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,.1);
+        margin-bottom: 1rem;
+        transition: transform 0.2s;
+    }
+
+    .word-card:hover {
+        transform: translateY(-2px);
+    }
+
+    .word-card .card-body {
+        padding: 1.5rem;
+    }
+
+    .word-english {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 0.5rem;
+    }
+
+    .word-korean {
+        color: #666;
+        font-size: 1.1rem;
+    }
+
+    .word-info {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1rem;
+        color: #888;
+        font-size: 0.9rem;
+    }
+
+    /* 페이지네이션 */
+    .pagination {
+        margin-top: 2rem;
+        justify-content: center;
+    }
+
+    .page-link {
+        color: #007bff;
+        border: 1px solid #dee2e6;
+        padding: 0.5rem 1rem;
+    }
+
+    .page-link:hover {
+        background-color: #e9ecef;
+        color: #0056b3;
+    }
+
+    .page-item.active .page-link {
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+
+    /* 반응형 디자인 */
+    @media (max-width: 768px) {
+        .search-sort-section {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .sort-options {
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="vocabulary-container">
+    <div class="container">
+        <h1 class="mb-4">{{ friend.username }}님의 단어장</h1>
+        
+        <!-- 검색 및 정렬 섹션 -->
+        <div class="search-sort-section">
+            <form class="search-box" method="get">
+                <div class="input-group">
+                    <input type="text" name="search" class="form-control" placeholder="단어 검색..." value="{{ search_query }}">
+                    <button class="btn btn-primary" type="submit">검색</button>
+                </div>
+            </form>
+            
+            <div class="sort-options">
+                <a href="?sort=english{% if search_query %}&search={{ search_query }}{% endif %}" 
+                   class="btn btn-outline-primary {% if sort_by == 'english' %}active{% endif %}">
+                    가나다순
+                </a>
+                <a href="?sort=-english{% if search_query %}&search={{ search_query }}{% endif %}" 
+                   class="btn btn-outline-primary {% if sort_by == '-english' %}active{% endif %}">
+                    가나다역순
+                </a>
+                <a href="?sort=-created_at{% if search_query %}&search={{ search_query }}{% endif %}" 
+                   class="btn btn-outline-primary {% if sort_by == '-created_at' %}active{% endif %}">
+                    최신순
+                </a>
+            </div>
+        </div>
+
+        <!-- 단어 목록 -->
+        {% if words %}
+            {% for word_item in words %}
+                <div class="word-card">
+                    <div class="card-body">
+                        <div class="word-english">{{ word_item.word.english }}</div>
+                        <div class="word-korean">{{ word_item.word.korean }}</div>
+                        <div class="word-info">
+                            <span>품사: {{ word_item.word.get_part_of_speech_display }}</span>
+                            <span>난이도: {{ word_item.word.get_difficulty_display }}</span>
+                            {% if word_item.word.example_sentence %}
+                                <span>예문 있음</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+
+            <!-- 페이지네이션 -->
+            {% if words.has_other_pages %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination">
+                        {% if words.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ words.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">이전</a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in words.paginator.page_range %}
+                            {% if words.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if words.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ words.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">다음</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="alert alert-info">
+                {% if search_query %}
+                    검색 결과가 없습니다.
+                {% else %}
+                    아직 단어가 없습니다.
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,386 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}단어 목록 학습 - TOEIC 단어 학습{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2 class="h4 mb-0">단어 목록 학습</h2>
+                    <div id="study-timer" class="badge bg-primary px-3 py-2">00:00</div>
+                </div>
+                <div class="card-body">
+                    <!-- 필터링 및 검색 -->
+                    <form method="get" class="mb-4 row g-3">
+                        <div class="col-md-3">
+                            <label for="difficulty" class="form-label">난이도</label>
+                            <select class="form-select" id="difficulty" name="difficulty">
+                                <option value="">전체</option>
+                                {% for code, name in difficulties %}
+                                <option value="{{ code }}" {% if selected_difficulty == code %}selected{% endif %}>
+                                    {{ name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="sort" class="form-label">정렬</label>
+                            <select class="form-select" id="sort" name="sort">
+                                <option value="english" {% if sort == 'english' %}selected{% endif %}>알파벳순</option>
+                                <option value="difficulty" {% if sort == 'difficulty' %}selected{% endif %}>난이도순</option>
+                                <option value="recent" {% if sort == 'recent' %}selected{% endif %}>최근 추가순</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="search" class="form-label">검색</label>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   placeholder="단어 검색" value="{{ search }}">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">적용</button>
+                        </div>
+                    </form>
+
+                    <!-- 단어 목록 -->
+                    <div class="table-responsive">
+                        <table class="table table-hover word-list-table">
+                            <thead>
+                                <tr>
+                                    <th>영단어</th>
+                                    <th>한국어</th>
+                                    <th>품사</th>
+                                    <th>난이도</th>
+                                    <th>학습 상태</th>
+                                    <th>액션</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for word in words %}
+                                <tr>
+                                    <td>
+                                        <span class="d-flex align-items-center">
+                                            {{ word.english }}
+                                            <button class="btn btn-sm btn-link" onclick="speakText('{{ word.english }}')">
+                                                <i class="fas fa-volume-up"></i>
+                                            </button>
+                                            {% if word.is_bookmarked %}
+                                            <i class="fas fa-star text-warning ms-2"></i>
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                    <td>{{ word.korean }}</td>
+                                    <td>{{ word.part_of_speech }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ word.get_difficulty_color }}">
+                                            {{ word.get_difficulty_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if word.study_progress %}
+                                        <div class="progress">
+                                            <div class="progress-bar" role="progressbar" 
+                                                 style="width: {{ word.study_progress.proficiency|floatformat:0 }}0%">
+                                                {{ word.study_progress.proficiency }}/5
+                                            </div>
+                                        </div>
+                                        {% else %}
+                                        <span class="text-muted">미학습</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <button type="button" class="btn btn-sm btn-primary" 
+                                                    onclick="showWordDetail({{ word.id }})">
+                                                상세
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                    onclick="markAsStudied({{ word.id }})">
+                                                학습완료
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 페이지네이션 -->
+                    {% if words.has_other_pages %}
+                    <nav aria-label="학습 단어 목록 페이지네이션">
+                        <ul class="pagination justify-content-center mt-4">
+                            {% if words.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ words.previous_page_number }}&difficulty={{ selected_difficulty }}&sort={{ sort }}&search={{ search }}">
+                                    이전
+                                </a>
+                            </li>
+                            {% endif %}
+
+                            {% for num in words.paginator.page_range %}
+                            <li class="page-item {% if words.number == num %}active{% endif %}">
+                                <a class="page-link" href="?page={{ num }}&difficulty={{ selected_difficulty }}&sort={{ sort }}&search={{ search }}">
+                                    {{ num }}
+                                </a>
+                            </li>
+                            {% endfor %}
+
+                            {% if words.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ words.next_page_number }}&difficulty={{ selected_difficulty }}&sort={{ sort }}&search={{ search }}">
+                                    다음
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 단어 상세 모달 -->
+<div class="modal fade" id="wordDetailModal" tabindex="-1" aria-labelledby="wordDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="wordDetailModalLabel">단어 상세</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h3 id="modal-english"></h3>
+                        <p class="text-muted" id="modal-part-of-speech"></p>
+                        <hr>
+                        <h4>뜻</h4>
+                        <p id="modal-korean"></p>
+                        <div id="modal-example-container" style="display: none;">
+                            <h4>예문</h4>
+                            <p id="modal-example"></p>
+                            <p class="text-muted" id="modal-example-translation"></p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h5 class="mb-0">학습 현황</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="progress mb-3">
+                                    <div class="progress-bar" role="progressbar" id="modal-progress-bar"
+                                         style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                    </div>
+                                </div>
+                                <p id="modal-study-status">학습 데이터가 없습니다.</p>
+                                <div class="d-grid">
+                                    <button type="button" class="btn btn-primary" 
+                                            onclick="updateProficiency()" id="update-proficiency-btn">
+                                        숙련도 업데이트
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="speakModalWord()">
+                    <i class="fas fa-volume-up"></i> 발음 듣기
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 숙련도 업데이트 모달 -->
+<div class="modal fade" id="proficiencyModal" tabindex="-1" aria-labelledby="proficiencyModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="proficiencyModalLabel">단어 숙련도 업데이트</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>이 단어를 얼마나 잘 알고 있나요?</p>
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-danger" onclick="submitProficiency(1)">
+                        <i class="fas fa-frown"></i> 전혀 모름 (1/5)
+                    </button>
+                    <button type="button" class="btn btn-warning" onclick="submitProficiency(2)">
+                        <i class="fas fa-meh"></i> 조금 알고 있음 (2/5)
+                    </button>
+                    <button type="button" class="btn btn-info" onclick="submitProficiency(3)">
+                        <i class="fas fa-smile"></i> 보통 (3/5)
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="submitProficiency(4)">
+                        <i class="fas fa-grin"></i> 잘 알고 있음 (4/5)
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="submitProficiency(5)">
+                        <i class="fas fa-grin-stars"></i> 완벽히 알고 있음 (5/5)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // 타이머 기능
+    let studySeconds = 0;
+    const timerElement = document.getElementById('study-timer');
+    
+    function updateTimer() {
+        studySeconds++;
+        const minutes = Math.floor(studySeconds / 60);
+        const seconds = studySeconds % 60;
+        timerElement.textContent = 
+            (minutes < 10 ? '0' : '') + minutes + ':' + 
+            (seconds < 10 ? '0' : '') + seconds;
+    }
+    
+    setInterval(updateTimer, 1000);
+    
+    // 단어 발음 재생
+    function speakText(text) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        window.speechSynthesis.speak(utterance);
+    }
+    
+    // 모달에서 단어 발음 재생
+    function speakModalWord() {
+        const text = document.getElementById('modal-english').textContent;
+        speakText(text);
+    }
+    
+    // 현재 선택된 단어 ID
+    let currentWordId = null;
+    
+    // 단어 상세 정보 모달 표시
+    function showWordDetail(wordId) {
+        currentWordId = wordId;
+        
+        fetch(`/study/word/${wordId}/detail/`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('modal-english').textContent = data.english;
+                document.getElementById('modal-part-of-speech').textContent = data.part_of_speech;
+                document.getElementById('modal-korean').textContent = data.korean;
+                
+                // 예문이 있으면 표시
+                const exampleContainer = document.getElementById('modal-example-container');
+                if (data.example_sentence) {
+                    document.getElementById('modal-example').textContent = data.example_sentence;
+                    document.getElementById('modal-example-translation').textContent = 
+                        data.example_sentence_translation || '';
+                    exampleContainer.style.display = 'block';
+                } else {
+                    exampleContainer.style.display = 'none';
+                }
+                
+                // 학습 상태 표시
+                const progressBar = document.getElementById('modal-progress-bar');
+                const studyStatus = document.getElementById('modal-study-status');
+                
+                if (data.study_progress) {
+                    const proficiency = data.study_progress.proficiency;
+                    const percent = proficiency * 20;
+                    
+                    progressBar.style.width = `${percent}%`;
+                    progressBar.setAttribute('aria-valuenow', percent);
+                    
+                    studyStatus.textContent = `현재 숙련도: ${proficiency}/5`;
+                    
+                    if (proficiency < 5) {
+                        document.getElementById('update-proficiency-btn').style.display = 'block';
+                    } else {
+                        document.getElementById('update-proficiency-btn').style.display = 'none';
+                    }
+                } else {
+                    progressBar.style.width = '0%';
+                    progressBar.setAttribute('aria-valuenow', 0);
+                    studyStatus.textContent = '학습 데이터가 없습니다.';
+                    document.getElementById('update-proficiency-btn').style.display = 'block';
+                }
+                
+                // 모달 표시
+                const modal = new bootstrap.Modal(document.getElementById('wordDetailModal'));
+                modal.show();
+            });
+    }
+    
+    // 숙련도 업데이트 모달 표시
+    function updateProficiency() {
+        const modal = new bootstrap.Modal(document.getElementById('proficiencyModal'));
+        modal.show();
+    }
+    
+    // 숙련도 제출
+    function submitProficiency(level) {
+        const formData = new FormData();
+        formData.append('proficiency', level);
+        
+        fetch(`/study/word/${currentWordId}/proficiency/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+            body: formData
+        })
+        .then(response => {
+            if (response.ok) {
+                // 모달 닫기
+                bootstrap.Modal.getInstance(document.getElementById('proficiencyModal')).hide();
+                
+                // 학습 상태 업데이트
+                const progressBar = document.getElementById('modal-progress-bar');
+                const studyStatus = document.getElementById('modal-study-status');
+                const percent = level * 20;
+                
+                progressBar.style.width = `${percent}%`;
+                progressBar.setAttribute('aria-valuenow', percent);
+                studyStatus.textContent = `현재 숙련도: ${level}/5`;
+                
+                if (level >= 5) {
+                    document.getElementById('update-proficiency-btn').style.display = 'none';
+                }
+                
+                // 페이지 새로고침 (테이블 업데이트를 위해)
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            }
+        });
+    }
+    
+    // 학습 완료로 표시
+    function markAsStudied(wordId) {
+        const formData = new FormData();
+        formData.append('proficiency', 5); // 최대 숙련도
+        
+        fetch(`/study/word/${wordId}/proficiency/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+            body: formData
+        })
+        .then(response => {
+            if (response.ok) {
+                // 페이지 새로고침
+                location.reload();
+            }
+        });
+    }
+</script>
+{% endblock %}
+
+{% endblock %} 

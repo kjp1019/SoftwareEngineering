@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}관리자 홈 - TOEIC 단어 학습{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body text-center py-5">
+                    <h1 class="display-4 mb-4">관리자 페이지</h1>
+                    <p class="lead text-muted mb-5">TOEIC 단어 학습 시스템 관리</p>
+                    
+                    <div class="d-grid gap-3 col-md-6 mx-auto">
+                        <a href="{% url 'vocabulary:word_list' %}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-book me-2"></i>단어 관리
+                        </a>
+                        <a href="{% url 'vocabulary:word_add' %}" class="btn btn-success btn-lg">
+                            <i class="fas fa-plus me-2"></i>단어 추가
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    border: none;
+    border-radius: 15px;
+}
+
+.btn {
+    padding: 1rem;
+    font-size: 1.1rem;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.display-4 {
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.lead {
+    color: #7f8c8d;
+}
+</style>
+{% endblock %} 

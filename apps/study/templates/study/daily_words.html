@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}오늘의 단어 - TOEIC 단어 학습{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2 class="h4 mb-0">오늘의 단어</h2>
+                    <div class="date">{{ today|date:"Y년 m월 d일" }}</div>
+                </div>
+                <div class="card-body">
+                    {% if daily_words %}
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>영단어</th>
+                                    <th>의미</th>
+                                    <th>예문</th>
+                                    <th>액션</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for word in daily_words %}
+                                <tr>
+                                    <td class="align-middle">
+                                        <div class="word-actions">
+                                            <strong>{{ word.english }}</strong>
+                                            <button class="btn btn-sm btn-outline-primary ms-2" 
+                                                    onclick="speakText('{{ word.english }}')">
+                                                <i class="fas fa-volume-up"></i>
+                                            </button>
+                                        </div>
+                                        <small class="text-muted d-block">{{ word.part_of_speech }}</small>
+                                    </td>
+                                    <td class="align-middle">{{ word.korean }}</td>
+                                    <td class="align-middle">
+                                        {% if word.example_sentence %}
+                                        <div class="example-section">
+                                            <p class="mb-1">{{ word.example_sentence }}</p>
+                                            <button class="btn btn-sm btn-outline-primary mb-2" 
+                                                    onclick="speakText('{{ word.example_sentence }}')">
+                                                <i class="fas fa-volume-up"></i>
+                                            </button>
+                                            <p class="text-muted small">{{ word.example_translation }}</p>
+                                        </div>
+                                        {% endif %}
+                                    </td>
+                                    <td class="align-middle">
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-success" 
+                                                    onclick="markWord({{ word.id }}, 5)">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-danger" 
+                                                    onclick="markWord({{ word.id }}, 1)">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <p class="text-muted">오늘의 단어가 아직 준비되지 않았습니다.</p>
+                        <a href="{% url 'study:plan_create' %}" class="btn btn-primary">
+                            새 학습 계획 만들기
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    function speakText(text) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        window.speechSynthesis.speak(utterance);
+    }
+
+    function markWord(wordId, proficiency) {
+        fetch(`/study/progress/word/${wordId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: `proficiency=${proficiency}`
+        })
+        .then(response => {
+            if (response.ok) {
+                // 해당 행 숨기기
+                const row = document.querySelector(`tr[data-word-id="${wordId}"]`);
+                if (row) {
+                    row.style.display = 'none';
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}
+
+{% endblock %} 

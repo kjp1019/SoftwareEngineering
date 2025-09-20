@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+{% block title %}영어 → 한국어 주관식 결과{% endblock %}
+{% block content %}
+<style>
+.score-circle {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 2rem;
+    position: relative;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.score-circle::before {
+    content: '';
+    position: absolute;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: white;
+}
+.score-content {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+}
+.score-number {
+    font-size: 3rem;
+    font-weight: 700;
+    color: #0056b3;
+    margin: 0;
+    line-height: 1;
+}
+.score-label {
+    font-size: 1.2rem;
+    color: #6c757d;
+    margin: 0;
+}
+.result-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    transition: all 0.2s ease;
+}
+.result-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+}
+.result-card.correct {
+    border-left: 4px solid #28a745;
+}
+.result-card.incorrect {
+    border-left: 4px solid #dc3545;
+    background: #fff5f5;
+}
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
+.action-btn {
+    padding: 0.8rem 1.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.action-btn:hover {
+    transform: translateY(-2px);
+    text-decoration: none;
+}
+.retry-btn {
+    background: #0056b3;
+    color: white;
+    box-shadow: 0 4px 12px rgba(0,86,179,0.2);
+}
+.retry-btn:hover {
+    background: #004494;
+    color: white;
+    box-shadow: 0 6px 16px rgba(0,86,179,0.3);
+}
+.home-btn {
+    background: #f8f9fa;
+    color: #212529;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.home-btn:hover {
+    background: #e9ecef;
+    color: #212529;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+}
+.wrong-answer-card .add-note-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+.wrong-answer-card .add-note-btn:hover {
+    background: #c82333;
+    transform: translateY(-2px);
+}
+.wrong-answer-card .add-note-btn.added {
+    background: #28a745;
+}
+.wrong-answer-card .add-note-btn.added:hover {
+    background: #218838;
+}
+.note-added-message {
+    color: #28a745;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+    display: none;
+}
+.note-added-message.show {
+    display: block;
+}
+</style>
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h4 mb-0">영어 → 한국어 주관식 결과</h2>
+                </div>
+                <div class="card-body">
+                    <div class="score-circle">
+                        <div class="score-content">
+                            <p class="score-number">{{ score }}</p>
+                            <p class="score-label">점</p>
+                        </div>
+                    </div>
+                    <div class="text-center mb-4">
+                        <h3 class="h5 text-muted">
+                            {{ correct_count }}개 정답 / 총 {{ total }}문제
+                        </h3>
+                    </div>
+                    <hr class="my-4">
+                    {% for r in results %}
+                    <div class="result-card {% if r.is_correct %}correct{% else %}incorrect wrong-answer-card{% endif %}">
+                        <h5 class="mb-3">Q{{ forloop.counter }}. {{ r.question }}</h5>
+                        <div class="mb-2">
+                            <span class="me-2">내 답: <span class="fw-bold {% if r.is_correct %}text-success{% else %}text-danger text-decoration-line-through{% endif %}">{{ r.user_answer }}</span></span>
+                            <span>정답: <span class="fw-bold text-success">{{ r.answer }}</span></span>
+                        </div>
+                        {% if not r.is_correct %}
+                        <div class="mt-3">
+                            <button class="add-note-btn" 
+                                    onclick="addToWrongAnswerNote('{{ r.question }}', '{{ r.answer }}', '{{ r.user_answer }}')"
+                                    data-question="{{ r.question }}"
+                                    data-answer="{{ r.answer }}"
+                                    data-user-answer="{{ r.user_answer }}">
+                                <i class="fas fa-bookmark me-2"></i>오답 노트에 추가
+                            </button>
+                            <div class="note-added-message">
+                                <i class="fas fa-check-circle me-1"></i>오답 노트에 추가되었습니다
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    <div class="action-buttons">
+                        <a href="{% url 'quiz:en_to_ko_typing' %}" class="action-btn retry-btn">
+                            <i class="fas fa-redo"></i>
+                            다시 풀기
+                        </a>
+                        <a href="{% url 'quiz:all_wrong_answer_notes' %}" class="action-btn home-btn">
+                            <i class="fas fa-book"></i>
+                            오답 노트 보기
+                        </a>
+                        <a href="{% url 'quiz:quiz_home' %}" class="action-btn home-btn">
+                            <i class="fas fa-home"></i>
+                            퀴즈 홈으로
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+function addToWrongAnswerNote(question, answer, userAnswer) {
+    const button = event.target.closest('.add-note-btn');
+    const message = button.nextElementSibling;
+    fetch('{% url "quiz:add_wrong_answer" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            question: question,
+            answer: answer,
+            user_answer: userAnswer
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            button.classList.add('added');
+            button.innerHTML = '<i class="fas fa-check me-2"></i>추가됨';
+            message.classList.add('show');
+            setTimeout(() => {
+                message.classList.remove('show');
+            }, 2000);
+        }
+    });
+}
+</script>
+{% endblock %} 

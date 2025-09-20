@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}단어 수정 - TOEIC 단어 학습{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="h4 mb-0">단어 수정</h2>
+                </div>
+                <div class="card-body">
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="english" class="form-label">영단어</label>
+                            <input type="text" class="form-control" id="english" name="english" 
+                                   value="{{ word.english }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="korean" class="form-label">한글 의미</label>
+                            <input type="text" class="form-control" id="korean" name="korean" 
+                                   value="{{ word.korean }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="part_of_speech" class="form-label">품사</label>
+                            <select class="form-select" id="part_of_speech" name="part_of_speech" required>
+                                <option value="">품사를 선택하세요</option>
+                                <option value="noun" {% if word.part_of_speech == 'noun' %}selected{% endif %}>명사</option>
+                                <option value="verb" {% if word.part_of_speech == 'verb' %}selected{% endif %}>동사</option>
+                                <option value="adjective" {% if word.part_of_speech == 'adjective' %}selected{% endif %}>형용사</option>
+                                <option value="adverb" {% if word.part_of_speech == 'adverb' %}selected{% endif %}>부사</option>
+                                <option value="preposition" {% if word.part_of_speech == 'preposition' %}selected{% endif %}>전치사</option>
+                                <option value="conjunction" {% if word.part_of_speech == 'conjunction' %}selected{% endif %}>접속사</option>
+                                <option value="pronoun" {% if word.part_of_speech == 'pronoun' %}selected{% endif %}>대명사</option>
+                                <option value="interjection" {% if word.part_of_speech == 'interjection' %}selected{% endif %}>감탄사</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="difficulty" class="form-label">난이도</label>
+                            <select class="form-select" id="difficulty" name="difficulty" required>
+                                <option value="">난이도를 선택하세요</option>
+                                <option value="easy" {% if word.difficulty == 'easy' %}selected{% endif %}>초급</option>
+                                <option value="medium" {% if word.difficulty == 'medium' %}selected{% endif %}>중급</option>
+                                <option value="hard" {% if word.difficulty == 'hard' %}selected{% endif %}>고급</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="example_sentence" class="form-label">예문</label>
+                            <textarea class="form-control" id="example_sentence" name="example_sentence" 
+                                      rows="3">{{ word.example_sentence }}</textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="example_translation" class="form-label">예문 번역</label>
+                            <textarea class="form-control" id="example_translation" 
+                                      name="example_translation" rows="3">{{ word.example_translation }}</textarea>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">단어 수정</button>
+                            <a href="{% url 'vocabulary:word_list' %}" class="btn btn-outline-secondary">취소</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+// 폼 유효성 검사
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+</script>
+{% endblock %}
+
+{% endblock %} 

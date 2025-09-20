@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}학습 진도 - TOEIC 단어 학습{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h4 mb-0">전체 학습 진도</h2>
+                </div>
+                <div class="card-body">
+                    <div class="progress mb-3">
+                        <div class="progress-bar" role="progressbar" 
+                             style="width: {{ total_progress }}%"
+                             aria-valuenow="{{ total_progress }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                            {{ total_progress }}%
+                        </div>
+                    </div>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <h5>학습한 단어</h5>
+                            <p class="h2">{{ total_words_learned }}</p>
+                        </div>
+                        <div class="col-4">
+                            <h5>총 학습 시간</h5>
+                            <p class="h2">{{ total_study_time }}</p>
+                        </div>
+                        <div class="col-4">
+                            <h5>평균 정답률</h5>
+                            <p class="h2">{{ average_accuracy }}%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h4 mb-0">학습 계획별 진도</h2>
+                </div>
+                <div class="card-body">
+                    {% if study_plans %}
+                    <div class="list-group">
+                        {% for plan in study_plans %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between mb-2">
+                                <h5 class="mb-1">{{ plan.title }}</h5>
+                                <small>{{ plan.progress }}%</small>
+                            </div>
+                            <div class="progress mb-2">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: {{ plan.progress }}%"
+                                     aria-valuenow="{{ plan.progress }}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    시작일: {{ plan.start_date|date:"Y-m-d" }}
+                                </small>
+                                <a href="{% url 'study:plan_detail' plan.id %}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    자세히 보기
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">아직 생성된 학습 계획이 없습니다.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="h4 mb-0">최근 학습 활동</h2>
+                </div>
+                <div class="card-body">
+                    {% if recent_activities %}
+                    <div class="timeline">
+                        {% for activity in recent_activities %}
+                        <div class="timeline-item">
+                            <div class="timeline-date">
+                                {{ activity.date|date:"Y-m-d H:i" }}
+                            </div>
+                            <div class="timeline-content">
+                                <h6>{{ activity.title }}</h6>
+                                <p>{{ activity.description }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">최근 학습 활동이 없습니다.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_css %}
+<style>
+    .timeline {
+        position: relative;
+        padding: 20px 0;
+    }
+    
+    .timeline-item {
+        position: relative;
+        padding-left: 40px;
+        margin-bottom: 20px;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #e9ecef;
+    }
+    
+    .timeline-item::after {
+        content: '';
+        position: absolute;
+        left: -4px;
+        top: 0;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #007bff;
+    }
+    
+    .timeline-date {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-bottom: 5px;
+    }
+    
+    .timeline-content {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+    }
+</style>
+{% endblock %}
+
+{% endblock %} 

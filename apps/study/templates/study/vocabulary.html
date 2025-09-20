@@ -1,0 +1,297 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}단어장 학습 - TOEIC 단어 학습{% endblock %}
+
+{% block extra_head %}
+<style>
+    .study-timer {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: white;
+        padding: 10px 20px;
+        border-radius: 50px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        z-index: 1000;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .word-actions {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    .btn-speak {
+        padding: 8px 16px;
+        border-radius: 50px;
+        transition: all 0.3s ease;
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.9rem;
+        color: #495057;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .btn-speak:hover {
+        transform: translateY(-2px);
+        background: #e9ecef;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        color: #212529;
+    }
+
+    .btn-speak i {
+        font-size: 1rem;
+        color: #0d6efd;
+        transition: all 0.3s ease;
+    }
+
+    .btn-speak:hover i {
+        transform: scale(1.1);
+    }
+
+    .card {
+        border: none;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border-radius: 15px;
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+
+    .card-header {
+        background: white;
+        border-bottom: 1px solid #f1f1f1;
+        padding: 1.5rem;
+    }
+
+    .card-header h2 {
+        margin: 0;
+        color: #2c3e50;
+    }
+
+    .table {
+        margin-bottom: 0;
+    }
+
+    .table th {
+        border-top: none;
+        font-weight: 600;
+        color: #2c3e50;
+        padding: 1.2rem 1rem;
+        background: #f8f9fa;
+    }
+
+    .table td {
+        vertical-align: middle;
+        padding: 1.2rem 1rem;
+        border-top: 1px solid #f1f1f1;
+    }
+
+    .word-english {
+        font-size: 1.2rem;
+        font-weight: 500;
+        color: #2c3e50;
+    }
+
+    .word-korean {
+        color: #34495e;
+        font-size: 1.1rem;
+    }
+
+    .word-example {
+        color: #7f8c8d;
+        margin-bottom: 0.8rem;
+        line-height: 1.6;
+    }
+
+    .word-translation {
+        color: #95a5a6;
+        font-size: 0.95rem;
+    }
+
+    .btn-group {
+        gap: 0.8rem;
+        display: flex;
+    }
+
+    .btn-sm {
+        padding: 8px 16px;
+        border-radius: 50px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .btn-sm:hover {
+        transform: translateY(-2px);
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+
+    .table-responsive {
+        border-radius: 15px;
+        overflow: hidden;
+    }
+
+    .fas {
+        margin-right: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- 타이머 추가 -->
+<div class="study-timer">
+    <i class="fas fa-clock"></i>
+    학습 시간: <span id="timer">00:00</span>
+</div>
+
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2 class="h4 mb-0">단어장 학습</h2>
+                    <div>
+                        <form action="{% url 'study:session_end' session.id %}" method="post" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-stop"></i> 학습 종료
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if words %}
+                    <div class="table-responsive">
+                        <table class="table table-hover word-table">
+                            <thead>
+                                <tr>
+                                    <th>영어</th>
+                                    <th>한글</th>
+                                    <th>예문</th>
+                                    <th>학습 상태</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for word in words %}
+                                <tr data-word-id="{{ word.id }}">
+                                    <td class="word-english">
+                                        <div class="word-actions">
+                                            {{ word.english }}
+                                            <button class="btn btn-outline-primary btn-speak" onclick="speakText('{{ word.english|escapejs }}')">
+                                                <i class="fas fa-volume-up"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                    <td class="word-korean">{{ word.korean }}</td>
+                                    <td>
+                                        {% if word.example_sentence %}
+                                        <div class="word-actions">
+                                            <div class="word-example">{{ word.example_sentence }}</div>
+                                            <button class="btn btn-outline-primary btn-speak" onclick="speakText('{{ word.example_sentence|escapejs }}')">
+                                                <i class="fas fa-volume-up"></i>
+                                            </button>
+                                        </div>
+                                        <div class="word-translation">{{ word.example_translation }}</div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-success" onclick="markWord({{ word.id }}, 5)">
+                                                알고있음
+                                            </button>
+                                            <button class="btn btn-sm btn-danger" onclick="markWord({{ word.id }}, 1)">
+                                                모름
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-center">학습할 단어가 없습니다.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 음성 합성 초기화
+    const synth = window.speechSynthesis;
+
+    // 텍스트를 음성으로 변환하여 재생하는 함수
+    function speakText(text) {
+        if (!synth) {
+            console.error('음성 합성이 지원되지 않는 브라우저입니다.');
+            return;
+        }
+        
+        // 이전 음성이 재생 중이면 중지
+        synth.cancel();
+        
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        utterance.rate = 0.8;
+        
+        // 음성 재생 시작/종료 시 로깅
+        utterance.onstart = () => console.log('음성 재생 시작:', text);
+        utterance.onend = () => console.log('음성 재생 종료');
+        utterance.onerror = (e) => console.error('음성 재생 오류:', e);
+        
+        synth.speak(utterance);
+    }
+
+    // 단어 학습 상태 표시 함수
+    function markWord(wordId, proficiency) {
+        const formData = new FormData();
+        formData.append('proficiency', proficiency);
+        
+        fetch(`/study/progress/word/${wordId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: formData
+        }).then(response => {
+            if (response.ok) {
+                // 성공적으로 처리되면 해당 행을 숨김
+                const row = document.querySelector(`tr[data-word-id="${wordId}"]`);
+                if (row) {
+                    row.style.display = 'none';
+                }
+            }
+        });
+    }
+
+    // 학습 시작 시간 기록
+    const startTime = new Date();
+    
+    // 타이머 업데이트 함수
+    function updateTimer() {
+        const currentTime = new Date();
+        const elapsedTime = Math.floor((currentTime - startTime) / 1000);
+        const minutes = Math.floor(elapsedTime / 60);
+        const seconds = elapsedTime % 60;
+        document.getElementById('timer').textContent = 
+            `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    // 1초마다 타이머 업데이트
+    setInterval(updateTimer, 1000);
+</script>
+{% endblock %} 

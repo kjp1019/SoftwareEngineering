@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}퀴즈 홈 - TOEIC 단어 학습{% endblock %}
+
+{% block content %}
+<style>
+.custom-quiz-btn {
+    padding: 0.9rem 0;
+    font-size: 1.15rem;
+    border-radius: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    font-weight: 600;
+    transition: background 0.2s, color 0.2s, transform 0.1s;
+    min-height: 52px;
+    letter-spacing: 0.02em;
+}
+.custom-quiz-btn:active {
+    transform: scale(0.97);
+}
+.custom-quiz-btn:hover, .custom-quiz-btn:focus {
+    background: #0056b3 !important;
+    color: #fff !important;
+    box-shadow: 0 4px 16px rgba(0,86,179,0.10);
+    transform: scale(1.03);
+}
+.custom-quiz-btn.btn-outline-primary:hover, .custom-quiz-btn.btn-outline-primary:focus {
+    background: #e3f0ff !important;
+    color: #0056b3 !important;
+    border-color: #0056b3 !important;
+}
+.custom-quiz-btn.disabled, .custom-quiz-btn:disabled {
+    opacity: 0.6;
+    pointer-events: none;
+}
+</style>
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h4 mb-0">퀴즈 모드 선택</h2>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        <!-- 한→영 테스트 -->
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-language fa-3x mb-3 text-primary"></i>
+                                    <h5 class="card-title">한국어 → 영어</h5>
+                                    <p class="card-text">한글 뜻을 보고 영어 단어를 맞혀보세요.</p>
+                                    <div class="d-grid gap-2">
+                                        <a href="{% url 'quiz:ko_to_en_multiple' %}" class="btn btn-primary custom-quiz-btn">객관식</a>
+                                        <a href="{% url 'quiz:ko_to_en_typing' %}" class="btn btn-outline-primary custom-quiz-btn">주관식</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 영→한 테스트 -->
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-book fa-3x mb-3 text-success"></i>
+                                    <h5 class="card-title">영어 → 한국어</h5>
+                                    <p class="card-text">영어 단어를 보고 한글 뜻을 맞혀보세요.</p>
+                                    <div class="d-grid gap-2">
+                                        <a href="{% url 'quiz:en_to_ko_multiple' %}" class="btn btn-primary custom-quiz-btn">객관식</a>
+                                        <a href="{% url 'quiz:en_to_ko_typing' %}" class="btn btn-outline-primary custom-quiz-btn">주관식</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 즐겨찾기 테스트 -->
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-star fa-3x mb-3 text-warning"></i>
+                                    <h5 class="card-title">즐겨찾기 단어 테스트</h5>
+                                    <p class="card-text">즐겨찾기한 단어만으로<br>퀴즈를 풀어보세요.</p>
+                                    <div class="d-grid gap-2">
+                                        <a href="{% url 'quiz:bookmark_multiple' %}" class="btn btn-primary custom-quiz-btn">객관식</a>
+                                        <a href="{% url 'quiz:bookmark_typing' %}" class="btn btn-outline-primary custom-quiz-btn">주관식</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 전체 오답노트 카드 추가 -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2 class="h4 mb-0">전체 오답노트</h2>
+                    <a href="{% url 'quiz:all_wrong_answer_notes' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-book me-2"></i>전체 오답노트 보기
+                    </a>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-0">
+                        <i class="fas fa-info-circle me-2"></i>모든 퀴즈에서 틀린 단어들을 모아볼 수 있습니다.
+                    </p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="h4 mb-0">최근 퀴즈 기록</h2>
+                </div>
+                <div class="card-body">
+                    {% if recent_attempts %}
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>퀴즈</th>
+                                    <th>날짜</th>
+                                    <th>점수</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for attempt in recent_attempts %}
+                                <tr>
+                                    <td>
+                                        {% if attempt.quiz %}
+                                            {{ attempt.quiz.title }}
+                                        {% else %}
+                                            {{ attempt.get_type_display }}
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ attempt.completed_at|date:"Y-m-d H:i" }}</td>
+                                    <td>
+                                        <a href="{% url 'quiz:quiz_history_detail' attempt.id %}" class="btn btn-sm btn-outline-info fw-bold">{{ attempt.score }}점</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <nav>
+                        <ul class="pagination justify-content-center">
+                            {% if recent_attempts.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ recent_attempts.previous_page_number }}">이전</a>
+                                </li>
+                            {% endif %}
+                            <li class="page-item disabled">
+                                <span class="page-link">{{ recent_attempts.number }} / {{ recent_attempts.paginator.num_pages }}</span>
+                            </li>
+                            {% if recent_attempts.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ recent_attempts.next_page_number }}">다음</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% else %}
+                    <p class="text-muted text-center">아직 퀴즈 기록이 없습니다.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

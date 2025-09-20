@@ -1,0 +1,392 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}친구 목록{% endblock %}
+
+{% block content %}
+<style>
+/* friends.html 전용 스타일 */
+.friends-tab-btn {
+    border: none !important;
+    background: #f8f9fa !important;
+    color: #495057 !important;
+    font-weight: 500;
+    padding: 16px 32px;
+    font-size: 1.1rem;
+    border-bottom: 3px solid transparent;
+    transition: background 0.2s, color 0.2s, border-bottom 0.2s;
+}
+.friends-tab-btn.active {
+    color: #0d6efd !important;
+    border-bottom: 3px solid #0d6efd !important;
+    background: #fff !important;
+}
+.friends-tab-btn i {
+    margin-right: 8px;
+    font-size: 1.2em;
+    vertical-align: middle;
+}
+.friends-section-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    padding: 32px;
+    margin-bottom: 32px;
+}
+.friends-section-card h2 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #22223b;
+    margin-bottom: 20px;
+}
+.friends-section-card .empty {
+    color: #adb5bd;
+    text-align: center;
+    margin: 40px 0;
+}
+.friends-section-card .empty i {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    color: #ced4da;
+}
+.friends-search-form input {
+    border: 1px solid #ced4da;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 1rem;
+    width: 220px;
+    margin-right: 8px;
+}
+.friends-search-form button {
+    background: #0d6efd;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 24px;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+.friends-search-form button:hover {
+    background: #0b5ed7;
+}
+.friends-section-card .list-group-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+    transition: background-color 0.2s;
+}
+
+.friends-section-card .list-group-item:hover {
+    background-color: #f8f9fa;
+}
+
+.friends-section-card .list-group-item:last-child {
+    border-bottom: none;
+}
+
+.friends-section-card .list-group-item .friend-info {
+    flex: 1;
+}
+
+.friends-section-card .list-group-item .friend-info strong {
+    display: block;
+    font-size: 1.1rem;
+    color: #22223b;
+    margin-bottom: 4px;
+}
+
+.friends-section-card .list-group-item .friend-info small {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.friends-section-card .list-group-item .delete-btn {
+    background: none;
+    border: none;
+    color: #dc3545;
+    padding: 8px;
+    border-radius: 50%;
+    transition: all 0.2s;
+    margin-left: 15px;
+}
+
+.friends-section-card .list-group-item .delete-btn:hover {
+    background-color: #dc3545;
+    color: white;
+}
+
+.friends-section-card .list-group-item .delete-btn i {
+    font-size: 1.1rem;
+}
+
+.friends-section-card .list-group-item .view-wordbook-btn {
+    background: none;
+    border: none;
+    color: #0d6efd;
+    padding: 8px;
+    border-radius: 50%;
+    transition: all 0.2s;
+    margin-right: 15px;
+}
+
+.friends-section-card .list-group-item .view-wordbook-btn:hover {
+    background-color: #0d6efd;
+    color: white;
+}
+
+.friends-section-card .list-group-item .view-wordbook-btn i {
+    font-size: 1.1rem;
+}
+</style>
+
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+        <!-- 상단 탭 메뉴 -->
+        <div class="flex border-b mb-8 bg-white rounded-t-lg shadow-sm">
+            <button class="friends-tab-btn active" id="friends-tab">
+                <i class="fas fa-users"></i>친구 목록
+            </button>
+            <button class="friends-tab-btn" id="requests-tab">
+                <i class="fas fa-user-plus"></i>친구 요청
+            </button>
+            <button class="friends-tab-btn" id="search-tab">
+                <i class="fas fa-search"></i>친구 찾기
+            </button>
+        </div>
+
+        <!-- 친구 목록 섹션 -->
+        <div id="friends-section" class="friends-section-card">
+            <h2><i class="fas fa-users text-blue-600"></i> 내 친구 목록</h2>
+            <div>
+                {% if friends_list %}
+                <div class="list-group">
+                    {% for friend, friendship in friends_list %}
+                    <div class="list-group-item">
+                        <div class="friend-info">
+                            <strong>{{ friend.nickname }}</strong>
+                            <small>
+                                레벨: {{ friend.profile.level }} | 
+                                경험치: {{ friend.profile.points }}
+                            </small>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <button class="view-wordbook-btn" onclick="viewFriendWordbook({{ friend.id }})" title="단어장 보기">
+                                <i class="fas fa-bookmark"></i>
+                            </button>
+                            <button class="delete-btn" onclick="deleteFriendship({{ friendship.id }})" title="친구 삭제">
+                                <i class="fas fa-user-minus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty">
+                    <i class="fas fa-user-friends"></i>
+                    <p>아직 친구가 없습니다. 친구를 찾아보세요!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 친구 요청 섹션 -->
+        <div id="requests-section" class="friends-section-card" style="display:none;">
+            <h2><i class="fas fa-user-plus text-blue-600"></i> 받은 친구 요청</h2>
+            <div>
+                {% if received_requests %}
+                <div class="list-group">
+                    {% for request in received_requests %}
+                    <div class="list-group-item">
+                        <div>
+                            <strong>{{ request.from_user.nickname }}</strong>
+                            <small class="text-muted">레벨: {{ request.from_user.profile.level }}</small>
+                        </div>
+                        <div>
+                            <button class="btn btn-success btn-sm" onclick="acceptRequest({{ request.id }})">수락</button>
+                            <button class="btn btn-danger btn-sm" onclick="rejectRequest({{ request.id }})">거절</button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty">
+                    <i class="fas fa-inbox"></i>
+                    <p>받은 친구 요청이 없습니다.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 친구 찾기 섹션 -->
+        <div id="search-section" class="friends-section-card" style="display:none;">
+            <h2><i class="fas fa-search text-blue-600"></i> 친구 찾기</h2>
+            <form class="friends-search-form mb-4 d-flex align-items-center">
+                <input type="text" id="searchInput" placeholder="닉네임을 입력하세요">
+                <button type="button" onclick="searchFriend()"><i class="fas fa-search"></i> 검색</button>
+            </form>
+            <div id="searchResult">
+                <div class="empty">
+                    <i class="fas fa-search"></i>
+                    <p>검색어를 입력하여 친구를 찾아보세요.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tabs = {
+        'friends-tab': 'friends-section',
+        'requests-tab': 'requests-section',
+        'search-tab': 'search-section'
+    };
+
+    function switchTab(activeTabId) {
+        Object.keys(tabs).forEach(tabId => {
+            const tab = document.getElementById(tabId);
+            tab.classList.remove('active');
+            document.getElementById(tabs[tabId]).style.display = 'none';
+        });
+        const activeTab = document.getElementById(activeTabId);
+        activeTab.classList.add('active');
+        document.getElementById(tabs[activeTabId]).style.display = '';
+    }
+
+    Object.keys(tabs).forEach(tabId => {
+        document.getElementById(tabId).addEventListener('click', () => switchTab(tabId));
+    });
+});
+
+function searchFriend() {
+    const nickname = document.getElementById('searchInput').value;
+    if (!nickname) {
+        alert('닉네임을 입력하세요.');
+        return;
+    }
+
+    fetch('{% url "study:friend_search" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: `nickname=${encodeURIComponent(nickname)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        const searchResult = document.getElementById('searchResult');
+        if (data.found) {
+            searchResult.innerHTML = `
+                <div class="alert alert-info">
+                    <strong>${data.nickname}</strong>
+                    <small class="d-block">레벨: ${data.level}</small>
+                    <small class="d-block">경험치: ${data.exp}</small>
+                    <button class="btn btn-primary btn-sm mt-2" onclick="sendFriendRequest(${data.user_id})">
+                        친구 요청
+                    </button>
+                </div>
+            `;
+        } else {
+            searchResult.innerHTML = `<div class="alert alert-warning">${data.message}</div>`;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('검색 중 오류가 발생했습니다.');
+    });
+}
+
+function sendFriendRequest(userId) {
+    fetch(`/study/friend_request/${userId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.message);
+        if (data.success) {
+            document.getElementById('searchResult').innerHTML = '';
+            document.getElementById('searchInput').value = '';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('친구 요청 중 오류가 발생했습니다.');
+    });
+}
+
+function acceptRequest(requestId) {
+    fetch(`/study/friend_request/${requestId}/accept/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.message);
+        if (data.success) {
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('요청 수락 중 오류가 발생했습니다.');
+    });
+}
+
+function rejectRequest(requestId) {
+    fetch(`/study/friend_request/${requestId}/reject/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.message);
+        if (data.success) {
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('요청 거절 중 오류가 발생했습니다.');
+    });
+}
+
+function deleteFriendship(friendshipId) {
+    if (!confirm('정말로 이 친구 관계를 삭제하시겠습니까?')) {
+        return;
+    }
+
+    fetch(`/study/friendship/${friendshipId}/delete/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.message);
+        if (data.success) {
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('친구 관계 삭제 중 오류가 발생했습니다.');
+    });
+}
+
+function viewFriendWordbook(friendId) {
+    window.location.href = "{% url 'study:friend_wordbook' 0 %}".replace('0', friendId);
+}
+</script>
+{% endblock %} 

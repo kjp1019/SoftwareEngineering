@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}데일리 미션 - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center mb-4">오늘의 데일리 미션</h2>
+    
+    {% if mission_words %}
+        <form id="dailyMissionForm" method="post" action="{% url 'study:submit_daily_mission' %}">
+            {% csrf_token %}
+            {% for choice in word_choices %}
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">문제 {{ forloop.counter }}</h5>
+                    <p class="card-text">{{ choice.word.english }}</p>
+                    <div class="form-group">
+                        {% for option in choice.choices %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="word_{{ choice.word.id }}" 
+                                   id="word_{{ choice.word.id }}_{{ forloop.counter }}" value="{{ option.id }}" required>
+                            <label class="form-check-label" for="word_{{ choice.word.id }}_{{ forloop.counter }}">
+                                {{ option.korean }}
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            <div class="text-center">
+                <button type="submit" class="btn btn-primary">제출하기</button>
+            </div>
+        </form>
+    {% else %}
+        <div class="alert alert-warning">
+            북마크된 단어가 5개 미만입니다. 더 많은 단어를 북마크하고 다시 시도해주세요.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('dailyMissionForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const submitButton = this.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 제출 중...';
+    
+    console.log('폼 데이터:', Object.fromEntries(formData));
+    
+    fetch(this.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('서버 응답:', data);
+        if (data.status === 'success') {
+            window.location.href = data.redirect_url;
+        } else {
+            throw new Error(data.message || '제출 중 오류가 발생했습니다.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert(error.message);
+        submitButton.disabled = false;
+        submitButton.innerHTML = '제출하기';
+    });
+});
+</script>
+{% endblock %} 

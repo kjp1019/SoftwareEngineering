@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="mb-0">단어 상세</h2>
+            <div>
+                {% if user.is_staff %}
+                    <!-- <a href="{% url 'vocabulary:word_edit' word.id %}" class="btn btn-primary">
+                        <i class="fas fa-edit"></i> 수정
+                    </a>
+                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                        <i class="fas fa-trash"></i> 삭제
+                    </button> -->
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center mb-3">
+                        <h3 class="mb-0 me-3">{{ word.english }}</h3>
+                        <button class="btn btn-outline-primary btn-sm" onclick="speakText('{{ word.english }}')">
+                            <i class="fas fa-volume-up"></i>
+                        </button>
+                    </div>
+                    <p class="text-muted">{{ word.part_of_speech }}</p>
+                    <hr>
+                    <h4>뜻</h4>
+                    <p>{{ word.korean }}</p>
+                    {% if word.example_sentence %}
+                        <h4>예문</h4>
+                        <div class="d-flex align-items-center mb-2">
+                            <p class="mb-0 me-3">{{ word.example_sentence }}</p>
+                            <button class="btn btn-outline-primary btn-sm" onclick="speakText('{{ word.example_sentence }}')">
+                                <i class="fas fa-volume-up"></i>
+                            </button>
+                        </div>
+                        {% if word.example_translation %}
+                            <p class="text-muted">{{ word.example_translation }}</p>
+                        {% endif %}
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    {% if word.note %}
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h4 class="mb-0">노트</h4>
+                            </div>
+                            <div class="card-body">
+                                <p>{{ word.note|linebreaks }}</p>
+                            </div>
+                        </div>
+                    {% endif %}
+                    {% if word.synonyms.all %}
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h4 class="mb-0">유의어</h4>
+                            </div>
+                            <div class="card-body">
+                                {% for synonym in word.synonyms.all %}
+                                    <a href="{% url 'vocabulary:word_detail' synonym.id %}" class="badge bg-secondary me-1">
+                                        {{ synonym.english }}
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">단어 삭제 확인</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                정말로 이 단어를 삭제하시겠습니까?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <form action="{% url 'vocabulary:word_delete' word.id %}" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">삭제</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+// 단어 발음 재생
+function speakText(text) {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    window.speechSynthesis.speak(utterance);
+}
+</script>
+{% endblock %}
+
+{% endblock %} 

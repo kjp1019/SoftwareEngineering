@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block title %}이번 테스트 오답노트{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2 class="h4 mb-0">이번 테스트 오답노트</h2>
+                    <span class="badge bg-primary">{{ notes|length }}개의 오답</span>
+                </div>
+                <div class="card-body">
+                    {% if notes %}
+                    <div class="row g-4">
+                        {% for note in notes %}
+                        <div class="col-md-6">
+                            <div class="card h-100 border-danger">
+                                <div class="card-body">
+                                    <h5 class="card-title mb-3">
+                                        {{ note.word.korean }} / {{ note.word.english }}
+                                    </h5>
+                                    {% if note.word.example %}
+                                    <p class="card-text text-muted">
+                                        <small><i class="fas fa-quote-left me-1"></i>{{ note.word.example }}</small>
+                                    </p>
+                                    {% endif %}
+                                    <div class="mt-3">
+                                        {% if note.already_added %}
+                                            <button class="btn btn-outline-secondary" disabled>이미 오답노트에 담김</button>
+                                        {% else %}
+                                            <form method="post" action="#" class="d-inline add-wrong-note-form">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="word_id" value="{{ note.word.id }}">
+                                                <button type="button" class="btn btn-outline-danger add-wrong-note-btn" data-word-id="{{ note.word.id }}">오답노트에 담기</button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">이번 테스트에서 틀린 단어가 없습니다.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+// 오답노트에 담기 버튼 AJAX 처리
+$(document).ready(function() {
+    $('.add-wrong-note-btn').click(function() {
+        var btn = $(this);
+        var wordId = btn.data('word-id');
+        btn.prop('disabled', true);
+        $.ajax({
+            url: '{% url "quiz:add_wrong_answer" %}',
+            type: 'POST',
+            data: JSON.stringify({ word_id: wordId }),
+            contentType: 'application/json',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+            success: function(response) {
+                if (response.success) {
+                    btn.text('오답노트에 담김').removeClass('btn-outline-danger').addClass('btn-outline-secondary');
+                } else {
+                    btn.text('오류 발생');
+                }
+            },
+            error: function() {
+                btn.text('오류 발생');
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

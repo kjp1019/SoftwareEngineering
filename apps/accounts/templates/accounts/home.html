@@ -1,0 +1,299 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load study_extras %}
+
+{% block title %}TOEIC 단어 학습{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* 네비게이션 바 스타일 */
+    .navbar {
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .navbar-nav .nav-link {
+        position: relative;
+        padding: 0.5rem 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .navbar-nav .nav-link:hover {
+        color: #fff !important;
+        background-color: rgba(255,255,255,0.1);
+        border-radius: 4px;
+    }
+    
+    .navbar-nav .nav-link.active {
+        color: #fff !important;
+        background-color: rgba(255,255,255,0.2);
+        border-radius: 4px;
+        font-weight: 500;
+    }
+    
+    .navbar-nav .nav-link.active::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 20px;
+        height: 3px;
+        background-color: #fff;
+        border-radius: 2px;
+    }
+    
+    .navbar-nav .nav-link:hover::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 20px;
+        height: 3px;
+        background-color: #fff;
+        border-radius: 2px;
+        opacity: 0.7;
+    }
+</style>
+{% endblock %}
+
+{% block extra_head %}
+<script>
+// 음성 합성 초기화
+const synth = window.speechSynthesis;
+
+// 텍스트를 음성으로 변환하여 재생하는 함수
+function speakText(text) {
+    if (!synth) {
+        console.error('음성 합성이 지원되지 않는 브라우저입니다.');
+        return;
+    }
+    
+    // 이전 음성이 재생 중이면 중지
+    synth.cancel();
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    utterance.rate = 0.8;
+    
+    // 음성 재생 시작/종료 시 로깅
+    utterance.onstart = () => console.log('음성 재생 시작:', text);
+    utterance.onend = () => console.log('음성 재생 종료');
+    utterance.onerror = (e) => console.error('음성 재생 오류:', e);
+    
+    synth.speak(utterance);
+}
+
+// 페이지 로드 시 음성 합성 초기화
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('페이지 로드 완료');
+    
+    // 단어 발음 버튼
+    const wordSpeakButtons = document.querySelectorAll('.btn-speak-word');
+    console.log('발음 버튼 찾음:', wordSpeakButtons.length);
+    wordSpeakButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const text = this.getAttribute('data-text');
+            console.log('버튼 클릭:', text);
+            speakText(text);
+        });
+    });
+
+    // 예문 발음 버튼
+    const exampleSpeakButtons = document.querySelectorAll('.btn-speak-example');
+    console.log('예문 발음 버튼 찾음:', exampleSpeakButtons.length);
+    exampleSpeakButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const text = this.getAttribute('data-text');
+            console.log('예문 버튼 클릭:', text);
+            speakText(text);
+        });
+    });
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12 text-center">
+            <h1 class="display-4">TOEIC 단어 학습</h1>
+            <p class="lead">효율적인 TOEIC 단어 학습을 시작하세요!</p>
+        </div>
+    </div>
+
+    {% if user.is_authenticated %}
+    <!-- 로그인한 사용자를 위한 대시보드 -->
+    <div class="row">
+        <!-- 오늘의 학습 현황 -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">오늘의 학습 현황</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <p>목표: {{ daily_goal }}개</p>
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" 
+                                 style="width: {{ today_progress|div:daily_goal|mul:100 }}%">
+                            </div>
+                        </div>
+                    </div>
+                    <p class="card-text">오늘 학습한 단어: {{ today_progress }}/{{ daily_goal }}개</p>
+                    {% if today_progress|add:'0' >= daily_goal|add:'0' %}
+                    <div class="alert alert-success text-center mt-3" role="alert" style="font-size:1.1rem;">
+                        🎉 오늘의 목표를 달성하셨습니다! 축하합니다! 🎉
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 오늘의 단어 -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">오늘의 단어</h5>
+                </div>
+                <div class="card-body">
+                    {% if todays_word %}
+                    <div class="word-card">
+                        <h4>{{ todays_word.english }}</h4>
+                        <p class="pronunciation">[{{ todays_word.part_of_speech }}]</p>
+                        <p>{{ todays_word.korean }}</p>
+                        <div class="d-flex justify-content-center gap-2 mb-2">
+                            <button class="btn btn-sm btn-primary btn-speak-word" data-text="{{ todays_word.english|escapejs }}">
+                                <i class="fas fa-volume-up"></i> 단어 발음
+                            </button>
+                            {% if todays_word.example_sentence %}
+                            <button class="btn btn-sm btn-secondary btn-speak-example" data-text="{{ todays_word.example_sentence|escapejs }}">
+                                <i class="fas fa-volume-up"></i> 예문 발음
+                            </button>
+                            {% endif %}
+                        </div>
+                        {% if todays_word.example_sentence %}
+                        <p class="small text-muted">{{ todays_word.example_sentence }}</p>
+                        <p class="text-muted"><small>{{ todays_word.example_translation }}</small></p>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">추천 단어가 없습니다.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 학습 통계 -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">나의 학습 통계</h5>
+                </div>
+                <div class="card-body">
+                    <p>총 학습 단어: {{ total_studied_words }}개</p>
+                    <p>현재 레벨: {{ user.profile.level }}</p>
+                    <p>경험치: {{ user.profile.experience }}/100</p>
+                    <a href="{% url 'study:statistics' %}" class="btn btn-primary">자세히 보기</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 퀵 메뉴 -->
+    <div class="row">
+        <div class="col-md-3 mb-4">
+            <a href="{% url 'vocabulary:word_list' %}" class="card text-decoration-none">
+                <div class="card-body text-center">
+                    <h5 class="card-title">단어장</h5>
+                    <p class="card-text">TOEIC 필수 단어를 학습하세요</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3 mb-4">
+            <a href="{% url 'quiz:quiz_home' %}" class="card text-decoration-none">
+                <div class="card-body text-center">
+                    <h5 class="card-title">퀴즈</h5>
+                    <p class="card-text">다양한 퀴즈로 실력을 테스트하세요</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3 mb-4">
+            <a href="{% url 'study:wrong_notes' %}" class="card text-decoration-none">
+                <div class="card-body text-center">
+                    <h5 class="card-title">오답 노트</h5>
+                    <p class="card-text">틀린 단어를 복습하세요</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3 mb-4">
+            <a href="{% url 'vocabulary:bookmarked_words' %}" class="card text-decoration-none">
+                <div class="card-body text-center">
+                    <h5 class="card-title">북마크</h5>
+                    <p class="card-text">중요 단어를 모아보세요</p>
+                </div>
+            </a>
+        </div>
+    </div>
+    {% else %}
+    <!-- 비로그인 사용자를 위한 소개 -->
+    <div class="row">
+        <div class="col-md-12 text-center mb-4">
+            <h2>TOEIC 단어 학습의 특징</h2>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-book fa-3x mb-3 text-primary"></i>
+                    <h5 class="card-title">체계적인 학습</h5>
+                    <p class="card-text">일일 학습 목표를 설정하고 체계적으로 단어를 학습하세요.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-sync fa-3x mb-3 text-success"></i>
+                    <h5 class="card-title">스마트 복습</h5>
+                    <p class="card-text">학습한 단어를 자동으로 복습하여 장기 기억을 강화하세요.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-chart-bar fa-3x mb-3 text-info"></i>
+                    <h5 class="card-title">학습 통계</h5>
+                    <p class="card-text">상세한 학습 통계로 자신의 실력을 확인하고 발전하세요.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function speakText(text) {
+    if (!window.speechSynthesis) {
+        console.error('음성 합성이 지원되지 않는 브라우저입니다.');
+        return;
+    }
+    
+    // 이전 음성이 재생 중이면 중지
+    window.speechSynthesis.cancel();
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    utterance.rate = 0.8;
+    
+    // 음성 재생 시작/종료 시 로깅
+    utterance.onstart = () => console.log('음성 재생 시작:', text);
+    utterance.onend = () => console.log('음성 재생 종료');
+    utterance.onerror = (e) => console.error('음성 재생 오류:', e);
+    
+    window.speechSynthesis.speak(utterance);
+}
+</script>
+{% endblock %} 

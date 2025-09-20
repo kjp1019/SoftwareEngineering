@@ -1,0 +1,227 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load study_extras %}
+
+{% block title %}{{ plan.title }} - TOEIC 단어 학습{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>{{ plan.title }}</h2>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <br>
+                    <p class="mb-0" style="font-weight: bold; font-size: 1.2rem;">목표: 하루 {{ daily_goal }}개 단어, {{ plan.target_study_time }}분 학습</p>
+                </div>
+                <div class="text-end">
+                    <a href="{% url 'study:plan_edit' plan.id %}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-edit"></i> 수정
+                    </a>
+                    <a href="{% url 'study:plan_delete' plan.id %}" class="btn btn-sm btn-outline-danger">
+                        <i class="fas fa-trash"></i> 삭제
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">오늘의 학습 현황</h5>
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="text-center flex-grow-1">
+                            <div class="mb-2">
+                                <i class="fas fa-clock fa-2x text-primary"></i>
+                            </div>
+                            <h6 class="text-muted mb-1">오늘의 학습 시간</h6>
+                            <h4 class="mb-0" id="daily-study-time">{{ daily_study_time|format_study_time }}</h4>
+                        </div>
+                        <div class="text-center flex-grow-1">
+                            <div class="mb-2">
+                                <i class="fas fa-book fa-2x text-success"></i>
+                            </div>
+                            <h6 class="text-muted mb-1">학습한 단어</h6>
+                            <h4 class="mb-0">{{ today_progress }}개</h4>
+                        </div>
+                    </div>
+                    <div class="progress mb-3" style="height: 8px;">
+                        <div class="progress-bar bg-primary" role="progressbar" 
+                             style="width: {% widthratio daily_study_time plan.target_study_time 100 %}%"
+                             aria-valuenow="{{ daily_study_time }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="{{ plan.target_study_time }}">
+                        </div>
+                    </div>
+                    <div class="progress mb-3" style="height: 8px;">
+                        <div class="progress-bar bg-success" role="progressbar" 
+                             style="width: {% widthratio today_progress daily_goal 100 %}%"
+                             aria-valuenow="{{ today_progress }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="{{ daily_goal }}">
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="text-center">
+                            <div class="mb-2">
+                                <i class="fas fa-history fa-2x text-info"></i>
+                            </div>
+                            <h6 class="text-muted mb-1">총 누적 학습 시간</h6>
+                            <h4 class="mb-0" id="total-study-time">{{ total_study_time|format_study_time }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">학습 시작하기</h5>
+                    <br>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <a href="{% url 'study:flashcard_study' plan.id %}" class="btn btn-primary btn-lg w-100 mb-3 py-4">
+                                <i class="fas fa-clone fa-2x mb-2"></i><br>플래시카드
+                            </a>
+                            <p class = "text-muted small text-center">한 번에 하나의 단어에 집중하여 학습할 수 있습니다.</p>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="{% url 'study:vocabulary_study' plan.id %}" class="btn btn-success btn-lg w-100 mb-3 py-4">
+                                <i class="fas fa-book fa-2x mb-2"></i><br>단어장
+                            </a>
+                            <p class = "text-muted small text-center">여러 단어를 한눈에 보고 비교하면 학습할 수 있습니다.</p>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="{% url 'study:review_study' plan.id %}" class="btn btn-warning btn-lg w-100 mb-3 py-4">
+                                <i class="fas fa-redo fa-2x mb-2"></i><br>복습
+                            </a>
+                            <p class = "text-muted small text-center">오답노트에 있는 단어들을 복습할 수 있습니다.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="h4 mb-0">학습 통계</h2>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p>오늘 학습한 단어: <span id="today-progress">{{ today_progress }}</span>/{{ daily_goal }}</p>
+                    <div class="progress mb-3">
+                        <div class="progress-bar" role="progressbar" style="width: {% widthratio today_progress daily_goal 100 %}%"></div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <p>총 학습 시간: <span id="total-study-time">{{ total_study_time|format_study_time }}</span></p>
+                </div>
+            </div>
+        </div>
+    </div> -->
+
+    {% if review_words %}
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">복습이 필요한 단어</h5>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>영어</th>
+                                    <th>한글</th>
+                                    <th>예문</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for word in review_words %}
+                                <tr>
+                                    <td>{{ word.english }}</td>
+                                    <td>{{ word.korean }}</td>
+                                    <td>
+                                        <small class="text-muted">{{ word.example_sentence }}</small><br>
+                                        <small class="text-muted">{{ word.example_translation }}</small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 프로그레스 바의 현재 상태를 저장할 변수들
+    let currentTimeProgress = 0;
+    let currentWordProgress = 0;
+    let isUpdating = false;
+
+    // 프로그레스 바 업데이트 함수
+    function updateProgressBars(data) {
+        if (data.status === 'success') {
+            // 시간 프로그레스 바 업데이트
+            const timeBar = document.querySelector('.progress-bar.bg-primary');
+            const timePercent = Math.min((data.daily_study_time / {{ plan.target_study_time }}) * 100, 100);
+            if (timePercent !== currentTimeProgress) {
+                timeBar.style.width = timePercent + '%';
+                timeBar.setAttribute('aria-valuenow', data.daily_study_time);
+                currentTimeProgress = timePercent;
+            }
+            
+            // 단어 프로그레스 바 업데이트
+            const wordBar = document.querySelector('.progress-bar.bg-success');
+            const wordPercent = Math.min((data.today_progress / {{ daily_goal }}) * 100, 100);
+            if (wordPercent !== currentWordProgress) {
+                wordBar.style.width = wordPercent + '%';
+                wordBar.setAttribute('aria-valuenow', data.today_progress);
+                currentWordProgress = wordPercent;
+            }
+
+            // 학습 시간 업데이트 (분:초 형식으로 변환)
+            const formatTime = (minutes) => {
+                const mins = Math.floor(minutes);
+                const secs = Math.floor((minutes - mins) * 60);
+                return mins > 0 ? `${mins}분 ${secs}초` : `${secs}초`;
+            };
+
+            document.getElementById('daily-study-time').textContent = formatTime(data.daily_study_time);
+            document.getElementById('total-study-time').textContent = formatTime(data.total_study_time);
+        }
+    }
+
+    // API 호출 함수
+    async function fetchStats() {
+        if (isUpdating) return; // 이미 업데이트 중이면 중복 호출 방지
+        
+        try {
+            isUpdating = true;
+            const response = await fetch("{% url 'study:stats_api' plan.id %}");
+            const data = await response.json();
+            updateProgressBars(data);
+        } catch (error) {
+            console.error('통계 업데이트 중 오류 발생:', error);
+        } finally {
+            isUpdating = false;
+        }
+    }
+
+    // 초기 데이터 로드
+    fetchStats();
+
+    // 1분마다 업데이트
+    setInterval(fetchStats, 60000);
+</script>
+{% endblock %} 

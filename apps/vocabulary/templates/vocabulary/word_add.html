@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}단어 추가 - TOEIC 단어 학습{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="h4 mb-0">단어 추가</h2>
+                </div>
+                <div class="card-body">
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="english" class="form-label">영단어</label>
+                            <input type="text" class="form-control" id="english" name="english" 
+                                   value="{{ form.english.value|default:'' }}" required>
+                            {% if form.english.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.english.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="korean" class="form-label">한글 의미</label>
+                            <input type="text" class="form-control" id="korean" name="korean" 
+                                   value="{{ form.korean.value|default:'' }}" required>
+                            {% if form.korean.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.korean.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="part_of_speech" class="form-label">품사</label>
+                            <select class="form-select" id="part_of_speech" name="part_of_speech" required>
+                                <option value="">품사를 선택하세요</option>
+                                <option value="noun" {% if form.part_of_speech.value == 'noun' %}selected{% endif %}>명사</option>
+                                <option value="verb" {% if form.part_of_speech.value == 'verb' %}selected{% endif %}>동사</option>
+                                <option value="adjective" {% if form.part_of_speech.value == 'adjective' %}selected{% endif %}>형용사</option>
+                                <option value="adverb" {% if form.part_of_speech.value == 'adverb' %}selected{% endif %}>부사</option>
+                                <option value="preposition" {% if form.part_of_speech.value == 'preposition' %}selected{% endif %}>전치사</option>
+                                <option value="conjunction" {% if form.part_of_speech.value == 'conjunction' %}selected{% endif %}>접속사</option>
+                                <option value="pronoun" {% if form.part_of_speech.value == 'pronoun' %}selected{% endif %}>대명사</option>
+                                <option value="interjection" {% if form.part_of_speech.value == 'interjection' %}selected{% endif %}>감탄사</option>
+                                <option value="article" {% if form.part_of_speech.value == 'article' %}selected{% endif %}>관사</option>
+                                <option value="other" {% if form.part_of_speech.value == 'other' %}selected{% endif %}>기타</option>
+                            </select>
+                            {% if form.part_of_speech.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.part_of_speech.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="difficulty" class="form-label">난이도</label>
+                            <select class="form-select" id="difficulty" name="difficulty" required>
+                                <option value="">난이도를 선택하세요</option>
+                                <option value="easy" {% if form.difficulty.value == 'easy' %}selected{% endif %}>초급</option>
+                                <option value="medium" {% if form.difficulty.value == 'medium' %}selected{% endif %}>중급</option>
+                                <option value="hard" {% if form.difficulty.value == 'hard' %}selected{% endif %}>고급</option>
+                            </select>
+                            {% if form.difficulty.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.difficulty.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="example_sentence" class="form-label">예문</label>
+                            <textarea class="form-control" id="example_sentence" name="example_sentence" 
+                                      rows="3">{{ form.example_sentence.value|default:'' }}</textarea>
+                            {% if form.example_sentence.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.example_sentence.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="example_translation" class="form-label">예문 번역</label>
+                            <textarea class="form-control" id="example_translation" 
+                                      name="example_translation" rows="3">{{ form.example_translation.value|default:'' }}</textarea>
+                            {% if form.example_translation.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.example_translation.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="note" class="form-label">노트</label>
+                            <textarea class="form-control" id="note" name="note" 
+                                      rows="3">{{ form.note.value|default:'' }}</textarea>
+                            {% if form.note.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.note.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="synonyms" class="form-label">유의어</label>
+                            <select class="form-select" id="synonyms" name="synonyms" multiple>
+                                {% for value, label in form.synonyms.field.choices %}
+                                <option value="{{ value }}" {% if value in form.synonyms.value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            {% if form.synonyms.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.synonyms.errors }}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">Ctrl(Windows) 또는 Command(Mac) 키를 누른 상태에서 여러 단어를 선택할 수 있습니다.</div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">단어 추가</button>
+                            <a href="{% url 'vocabulary:word_list' %}" class="btn btn-outline-secondary">취소</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+// 폼 유효성 검사
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+</script>
+{% endblock %}
+
+{% endblock %} 

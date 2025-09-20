@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% block title %}퀴즈 결과 리뷰{% endblock %}
+{% block content %}
+<style>
+.score-circle {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 2rem;
+    position: relative;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.score-circle::before {
+    content: '';
+    position: absolute;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: white;
+}
+.score-content {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+}
+.score-number {
+    font-size: 3rem;
+    font-weight: 700;
+    color: #0056b3;
+    margin: 0;
+    line-height: 1;
+}
+.score-label {
+    font-size: 1.2rem;
+    color: #6c757d;
+    margin: 0;
+}
+.result-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    transition: all 0.2s ease;
+}
+.result-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+}
+.result-card.correct {
+    border-left: 4px solid #28a745;
+}
+.result-card.incorrect {
+    border-left: 4px solid #dc3545;
+    background: #fff5f5;
+}
+.answer-detail {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+}
+.answer-detail p {
+    margin-bottom: 0.5rem;
+}
+.answer-detail p:last-child {
+    margin-bottom: 0;
+}
+</style>
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2 class="h4 mb-0">퀴즈 결과 리뷰</h2>
+                    <span class="badge bg-primary">{{ attempt.quiz_type|default:"일반" }} 퀴즈</span>
+                </div>
+                <div class="card-body">
+                    <div class="score-circle">
+                        <div class="score-content">
+                            <p class="score-number">{{ attempt.score|floatformat:0 }}</p>
+                            <p class="score-label">점</p>
+                        </div>
+                    </div>
+                    <div class="text-center mb-4">
+                        <h3 class="h5 text-muted">
+                            {{ attempt.correct_answers }}개 정답 / 총 {{ attempt.total_questions }}문제
+                        </h3>
+                    </div>
+                    <hr class="my-4">
+                    {% for a in answer_history %}
+                    <div class="result-card {% if a.is_correct %}correct{% else %}incorrect{% endif %}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h5 class="mb-3">Q{{ forloop.counter }}. {{ a.question.word.korean }}</h5>
+                            {% if a.is_correct %}
+                            <span class="badge bg-success">정답</span>
+                            {% else %}
+                            <span class="badge bg-danger">오답</span>
+                            {% endif %}
+                        </div>
+                        <div class="answer-detail">
+                            <p><strong>문제:</strong> {{ a.question.word.korean }}</p>
+                            <p><strong>정답:</strong> <span class="text-success">{{ a.question.word.english }}</span></p>
+                            <p><strong>내 답변:</strong> 
+                                <span class="{% if a.is_correct %}text-success{% else %}text-danger{% endif %}">
+                                    {{ a.user_answer|default:"답변 없음" }}
+                                </span>
+                            </p>
+                            {% if a.question.word.example %}
+                            <p class="mt-2"><strong>예문:</strong> {{ a.question.word.example }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                    <div class="text-center mt-4">
+                        <a href="{% url 'quiz:quiz_home' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-home me-2"></i>퀴즈 홈으로
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,393 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load account_filters %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <!-- 왼쪽 열: 프로필 정보 -->
+        <div class="col-md-4">
+            <!-- 프로필 정보 카드 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4 class="mb-0">프로필 정보</h4>
+                </div>
+                <div class="card-body">
+                    <h5>{{ user.username }}</h5>
+                    <p class="text-muted">{{ user.email }}</p>
+                    {% if user.profile.nickname %}
+                        <p>닉네임: {{ user.profile.nickname }}</p>
+                    {% endif %}
+                    <p>가입일: {{ user.profile.created_at|date:"Y년 m월 d일" }}</p>
+                </div>
+            </div>
+
+            <!-- 출석 현황 카드 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4 class="mb-0">출석 현황</h4>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <h4 class="streak-count">
+                            {% if streak_days > 0 %}
+                                🔥 {{ streak_days }}일 연속 출석 중!
+                            {% else %}
+                                아직 출석하지 않았습니다.
+                            {% endif %}
+                        </h4>
+                    </div>
+                    <div class="contribution-graph">
+                        {% for week in weeks %}
+                            <div class="contribution-week">
+                                {% for day in week %}
+                                    <div class="contribution-day {% if day.attended %}contribution-level-{{ day.streak_level }}{% endif %}"
+                                         data-bs-toggle="tooltip"
+                                         data-bs-placement="top"
+                                         title="{{ day.date|date:'Y-m-d' }}{% if day.attended %} ({{ day.streak }}일 연속){% endif %}">
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 회원탈퇴 카드 -->
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">계정 삭제</h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-danger">계정을 삭제하면 모든 학습 데이터가 영구적으로 삭제됩니다.</p>
+                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                        회원탈퇴
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 오른쪽 열: 학습 통계 및 설정 -->
+        <div class="col-md-8">
+            <!-- 나의 레벨 카드 -->
+            <div class="card mb-4">
+                <div class="card-header bg-gradient">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-crown text-warning me-2"></i>나의 레벨
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <div class="text-center mb-4">
+                                <div class="position-relative d-inline-block">
+                                    <div class="rounded-circle border-4 border
+                                        {% if user.profile.level < 3 %}
+                                            border-secondary
+                                        {% elif user.profile.level < 5 %}
+                                            border-success
+                                        {% elif user.profile.level < 7 %}
+                                            border-info
+                                        {% else %}
+                                            border-warning
+                                        {% endif %}"
+                                        style="width: 150px; height: 150px; display: flex; align-items: center; justify-content: center; background: linear-gradient(145deg, #ffffff, #f3f3f3); box-shadow: 5px 5px 15px #d1d1d1, -5px -5px 15px #ffffff;">
+                                        <div>
+                                            <h3 class="mb-0 text-muted">Level</h3>
+                                            <h2 class="mb-0 display-4 fw-bold
+                                                {% if user.profile.level < 3 %}
+                                                    text-secondary
+                                                {% elif user.profile.level < 5 %}
+                                                    text-success
+                                                {% elif user.profile.level < 7 %}
+                                                    text-info
+                                                {% else %}
+                                                    text-warning
+                                                {% endif %}">
+                                                {{ user.profile.level }}
+                                            </h2>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <h5 class="text-center mb-3">
+                                {% if user.profile.level < 3 %}
+                                    <span class="badge bg-secondary px-3 py-2 fs-6">기초</span>
+                                {% elif user.profile.level < 5 %}
+                                    <span class="badge bg-success px-3 py-2 fs-6">중급</span>
+                                {% elif user.profile.level < 7 %}
+                                    <span class="badge bg-info px-3 py-2 fs-6">고급</span>
+                                {% else %}
+                                    <span class="badge bg-warning px-3 py-2 fs-6">전문가</span>
+                                {% endif %}
+                            </h5>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <h6 class="text-muted mb-3">현재 포인트</h6>
+                                <div class="progress rounded-pill" style="height: 25px; background-color: #f0f0f0;">
+                                    <div class="progress-bar rounded-pill bg-primary" 
+                                         role="progressbar" 
+                                         style="width: {{ user.profile.points|div:user.profile.points_to_next_level|mul:100 }}%;" 
+                                         aria-valuenow="{{ user.profile.points }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="{{ user.profile.points_to_next_level }}">
+                                        <span class="fw-bold">{{ user.profile.points }}/{{ user.profile.points_to_next_level }}</span>
+                                    </div>
+                                </div>
+                                <small class="text-muted mt-2 d-block">다음 레벨까지 {{ user.profile.points_to_next_level|sub:user.profile.points }} 포인트 필요</small>
+                            </div>
+                            <div class="mb-3">
+                                <h6 class="text-muted mb-3">포인트 획득 방법</h6>
+                                <div class="list-group">
+                                    <div class="list-group-item border-0 bg-light mb-2 rounded-3">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-check-circle text-success me-3"></i>
+                                            <div>
+                                                <h6 class="mb-0">단어 학습 완료</h6>
+                                                <small class="text-muted">+5 포인트</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="list-group-item border-0 bg-light mb-2 rounded-3">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-check-circle text-success me-3"></i>
+                                            <div>
+                                                <h6 class="mb-0">한→영 객관식 퀴즈 완료</h6>
+                                                <small class="text-muted">+180 포인트 (20% 보너스)</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="list-group-item border-0 bg-light mb-2 rounded-3">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-check-circle text-success me-3"></i>
+                                            <div>
+                                                <h6 class="mb-0">한→영 주관식 퀴즈 완료</h6>
+                                                <small class="text-muted">+270 포인트 (20% 보너스)</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="list-group-item border-0 bg-light mb-2 rounded-3">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-check-circle text-success me-3"></i>
+                                            <div>
+                                                <h6 class="mb-0">영→한 객관식 퀴즈 완료</h6>
+                                                <small class="text-muted">+150 포인트</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="list-group-item border-0 bg-light mb-2 rounded-3">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-check-circle text-success me-3"></i>
+                                            <div>
+                                                <h6 class="mb-0">영→한 주관식 퀴즈 완료</h6>
+                                                <small class="text-muted">+225 포인트</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="list-group-item border-0 bg-light mb-2 rounded-3">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-check-circle text-success me-3"></i>
+                                            <div>
+                                                <h6 class="mb-0">즐겨찾기 단어 객관식 퀴즈 완료</h6>
+                                                <small class="text-muted">+100 포인트</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="list-group-item border-0 bg-light rounded-3">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-check-circle text-success me-3"></i>
+                                            <div>
+                                                <h6 class="mb-0">즐겨찾기 단어 주관식 퀴즈 완료</h6>
+                                                <small class="text-muted">+150 포인트</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 설정 카드 -->
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">설정</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'accounts:profile' %}" id="profileForm">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="daily_goal" class="form-label">일일 학습 목표</label>
+                            <input type="number" class="form-control" id="daily_goal" 
+                                   name="daily_goal" value="{{ user.profile.daily_goal }}" 
+                                   min="1" max="100">
+                                   
+                        </div>
+                        <div class="mb-3">
+                            <label for="nickname" class="form-label">닉네임</label>
+                            <input type="text" class="form-control" id="nickname" 
+                                   name="nickname" value="{{ user.profile.nickname }}">
+                            <div id="nicknameError" class="invalid-feedback"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="bio" class="form-label">자기소개</label>
+                            <textarea class="form-control" id="bio" name="bio" 
+                                      rows="3">{{ user.profile.bio }}</textarea>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="dark_mode" 
+                                   name="dark_mode" {% if user.profile.dark_mode %}checked{% endif %}>
+                            <label class="form-check-label" for="dark_mode">다크모드 사용</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary">설정 저장</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 회원탈퇴 확인 모달 -->
+<div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteAccountModalLabel">회원탈퇴 확인</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>정말로 회원탈퇴를 진행하시겠습니까?</p>
+                <p class="text-danger">이 작업은 되돌릴 수 없으며, 모든 학습 데이터가 영구적으로 삭제됩니다.</p>
+                <form method="post" action="{% url 'accounts:delete_account' %}" id="deleteAccountForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="password" class="form-label">비밀번호 확인</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <button type="submit" form="deleteAccountForm" class="btn btn-danger">회원탈퇴</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.contribution-graph {
+    display: grid;
+    grid-gap: 4px;
+    margin: 1rem 0;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+}
+
+.contribution-week {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-gap: 4px;
+}
+
+.contribution-day {
+    aspect-ratio: 1;
+    background-color: #ebedf0;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.contribution-day:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 5px rgba(0,0,0,0.2);
+}
+
+.streak-count {
+    color: #fd7e14;
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin: 0;
+    padding: 10px;
+    background-color: #fff3e6;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.contribution-level-0 { background-color: #ebedf0; }
+.contribution-level-1 { background-color: #9be9a8; }
+.contribution-level-2 { background-color: #40c463; }
+.contribution-level-3 { background-color: #30a14e; }
+.contribution-level-4 { background-color: #216e39; }
+
+/* 다크 모드 대응 */
+body.dark-mode .contribution-graph {
+    background-color: #2d2d2d;
+}
+
+body.dark-mode .contribution-day {
+    border-color: rgba(255,255,255,0.1);
+}
+
+body.dark-mode .streak-count {
+    background-color: #3d3d3d;
+    color: #ffa94d;
+}
+</style>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 툴팁 초기화
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // 닉네임 중복 체크
+    let nicknameTimeout;
+    const nicknameInput = document.getElementById('nickname');
+    const nicknameError = document.getElementById('nicknameError');
+
+    nicknameInput.addEventListener('input', function() {
+        clearTimeout(nicknameTimeout);
+        const nickname = this.value.trim();
+        
+        if (nickname === '{{ user.profile.nickname }}') {
+            nicknameError.style.display = 'none';
+            return;
+        }
+        
+        nicknameTimeout = setTimeout(() => {
+            if (nickname) {
+                fetch(`/check-nickname/?nickname=${encodeURIComponent(nickname)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.exists) {
+                            nicknameError.textContent = '이미 사용 중인 닉네임입니다.';
+                            nicknameError.style.display = 'block';
+                            nicknameInput.classList.add('is-invalid');
+                        } else {
+                            nicknameError.style.display = 'none';
+                            nicknameInput.classList.remove('is-invalid');
+                        }
+                    });
+            }
+        }, 500);
+    });
+
+    // 다크모드 설정 변경 시 즉시 적용
+    document.getElementById('dark_mode').addEventListener('change', function() {
+        document.body.classList.toggle('dark-mode', this.checked);
+        document.documentElement.classList.toggle('dark-mode', this.checked);
+        
+        // 폼 자동 제출
+        document.getElementById('profileForm').submit();
+    });
+});
+</script>
+{% endblock %}
+{% endblock %} 

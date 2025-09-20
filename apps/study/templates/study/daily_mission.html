@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}데일리 미션 - TOEIC 단어 학습{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h2 class="h4 mb-0">데일리 미션</h2>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'study:submit_daily_mission' %}">
+                        {% csrf_token %}
+                        {% for word in mission_words %}
+                        <div class="mb-4">
+                            <h5 class="mb-3">{{ word.english }}</h5>
+                            <div class="choices">
+                                {% for choice in word_choices|get_item:word %}
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" 
+                                           name="word_{{ word.id }}" 
+                                           id="word_{{ word.id }}_{{ choice.id }}" 
+                                           value="{{ choice.korean }}" required>
+                                    <label class="form-check-label" for="word_{{ word.id }}_{{ choice.id }}">
+                                        {{ choice.korean }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                제출하기
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 각 문제의 선택지를 무작위로 섞기
+    document.querySelectorAll('.choices').forEach(function(choices) {
+        const items = Array.from(choices.children);
+        items.sort(() => Math.random() - 0.5);
+        items.forEach(item => choices.appendChild(item));
+    });
+});
+</script>
+{% endblock %} 

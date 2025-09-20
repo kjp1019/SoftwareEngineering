@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}오답 노트{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">오답 노트</h2>
+
+    <!-- 테이블 -->
+    {% if wrong_answers %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">영어</th>
+                        <th scope="col">한국어</th>
+                        <th scope="col">틀린 횟수</th>
+                        <th scope="col">마지막 시도</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for answer in wrong_answers %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ answer.word__english }}</td>
+                            <td>{{ answer.word__korean }}</td>
+                            <td>{{ answer.wrong_count }}회</td>
+                            <td>{{ answer.last_attempt|date:"Y-m-d H:i" }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-warning">
+            <h4 class="alert-heading">아직 틀린 문제가 없습니다!</h4>
+            <p>퀴즈를 풀어보면서 학습을 시작해보세요.</p>
+            <hr>
+            <p class="mb-0">
+                <a href="{% url 'quiz:quiz_home' %}" class="btn btn-primary">퀴즈 풀기</a>
+            </p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %} 

@@ -1,0 +1,437 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load study_extras %}
+
+{% block title %}학습 홈 - TOEIC 단어 학습{% endblock %}
+
+{% block content %}
+<style>
+    .card {
+        transition: transform 0.2s, box-shadow 0.2s;
+        border-radius: 15px;
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    
+    .progress {
+        height: 12px;
+        border-radius: 6px;
+        background-color: #e9ecef;
+    }
+    
+    .progress-bar {
+        background: linear-gradient(45deg, #3498db, #2ecc71);
+        border-radius: 6px;
+    }
+    
+    .word-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+    
+    .example-sentence {
+        border-left: 4px solid #3498db;
+        background-color: #f8f9fa;
+    }
+    
+    .btn {
+        border-radius: 8px;
+        padding: 8px 16px;
+        transition: all 0.3s;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(45deg, #3498db, #2980b9);
+        border: none;
+    }
+    
+    .btn-success {
+        background: linear-gradient(45deg, #2ecc71, #27ae60);
+        border: none;
+    }
+    
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .btn-sound {
+        background: linear-gradient(45deg, #3498db, #2980b9);
+        color: white;
+        border: none;
+        border-radius: 20px;
+        padding: 6px 12px;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .btn-sound:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        background: linear-gradient(45deg, #2980b9, #3498db);
+    }
+
+    .btn-sound i {
+        margin-right: 5px;
+        font-size: 0.9rem;
+    }
+    
+    .list-group-item {
+        border-radius: 10px;
+        margin-bottom: 8px;
+        transition: all 0.3s;
+    }
+    
+    .list-group-item:hover {
+        background-color: #f8f9fa;
+        transform: translateX(5px);
+    }
+    
+    .alert {
+        border-radius: 10px;
+        border: none;
+    }
+    
+    .alert-success {
+        background: linear-gradient(45deg, #2ecc71, #27ae60);
+        color: white;
+    }
+    
+    .stat-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .stat-icon {
+        font-size: 2rem;
+        margin-bottom: 15px;
+        color: #3498db;
+    }
+    
+    .level-progress {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 15px;
+    }
+</style>
+
+<div class="row g-4">
+    <!-- 왼쪽 컬럼 -->
+    <div class="col-lg-8">
+        <!-- 학습 개요 카드 -->
+        <div class="card shadow-sm mb-4 border-0">
+            <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center py-3">
+                <h2 class="h4 mb-0" style="color: #2c3e50;">오늘의 학습</h2>
+                <!--<div id="current-time" class="text-muted small"></div>-->
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <!-- 오늘의 목표 -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="fas fa-bullseye me-2" style="color: #3498db;"></i>오늘의 목표
+                                </h5>
+                                <div class="mb-3">
+                                    <div class="progress mb-3" style="height: 25px; background-color: #e9ecef;">
+                                        <div class="progress-bar" role="progressbar" 
+                                             style="width: {% if daily_goal > 0 %}{% widthratio today_words daily_goal 100 %}{% else %}0{% endif %}%; background-color: #3498db;" 
+                                             aria-valuenow="{{ today_words }}" aria-valuemin="0" 
+                                             aria-valuemax="{{ daily_goal }}">
+                                            {{ today_words }}/{{ daily_goal }}개
+                                        </div>
+                                    </div>
+                                    <p class="text-muted mb-3">
+                                        <i class="fas fa-bullseye me-2" style="color: #2c3e50;"></i>오늘의 목표: {{ daily_goal }}개 단어
+                                    </p>
+                                </div>
+                                <!-- 오늘의 목표 달성 메시지 -->
+                                {% if today_words >= daily_goal %}
+                                <div class="alert alert-success text-center mt-3" role="alert" style="font-size:1.1rem; width: 100%;">
+                                    <i class="fas fa-trophy text-warning me-2"></i>오늘의 목표를 달성하셨습니다.<br>축하합니다!
+                                </div>
+                                {% endif %}
+
+                                <div class="row mt-4">
+                                    <div class="col-6">
+                                        <div class="stat-card">
+                                            <i class="fas fa-fire text-danger stat-icon"></i>
+                                            <small class="text-muted d-block">연속 출석일</small>
+                                            <strong class="fs-5">{{ user.attendances.first.streak_days }}일</strong>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="stat-card">
+                                            <i class="fas fa-chart-line text-primary stat-icon"></i>
+                                            <small class="text-muted d-block">주간 달성률</small>
+                                            <strong class="fs-5">{% widthratio 10 105 100 %}%</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 학습 통계 -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="fas fa-chart-line me-2" style="color: #3498db;"></i>학습 통계
+                                </h5>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">총 학습 단어:</span>
+                                    <strong>{{ total_studied_words }}개</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-3">
+                                    <span class="text-muted">현재 레벨:</span>
+                                    <strong>Level {{ user_profile.level }}</strong>
+                                </div>
+                                <div class="level-progress">
+                                    <div class="progress mb-2">
+                                        <div class="progress-bar" role="progressbar" 
+                                             style="width: {% widthratio user_profile.points user_profile.points_to_next_level 100 %}%;" 
+                                             aria-valuenow="{{ user_profile.points }}" 
+                                             aria-valuemin="0" aria-valuemax="{{ user_profile.points_to_next_level }}"></div>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <small class="text-muted">포인트: {{ user_profile.points }}/{{ user_profile.points_to_next_level }}</small>
+                                        <small class="text-muted">다음 레벨까지: {{ user_profile.points_to_next_level|subtract:user_profile.points }} 포인트</small>
+                                    </div>
+                                </div>
+                                <div class="d-grid mt-3">
+                                    <a href="{% url 'study:statistics' %}" class="btn btn-outline-primary">
+                                        <i class="fas fa-chart-line me-2"></i>자세한 통계 보기
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 학습 계획 카드 -->
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center py-3">
+                <div class="d-flex align-items-center">
+                    <h2 class="h4 mb-0" style="color: #2c3e50;">
+                        <i class="fas fa-tasks me-2"></i>나의 학습 계획
+                    </h2>
+                </div>
+                <!-- <a href="{% url 'study:plan_create' %}" class="btn btn-success">
+                    <i class="fas fa-plus me-2"></i>새 계획 만들기
+                </a> -->
+            </div>
+            <div class="card-body">
+                {% if study_plans %}
+                <div class="list-group list-group-flush">
+                    {% for plan in study_plans %}
+                    <div class="list-group-item border-0 py-3">
+                        <div class="d-flex w-100 justify-content-between align-items-center mb-2">
+                            <h5 class="mb-1" style="color: #2c3e50;">{{ plan.title }}</h5>
+                            <!-- <form method="post" action="{% url 'study:plan_delete' plan.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-trash me-2"></i>삭제
+                                </button>
+                            </form> -->
+                        </div>
+                        <!-- <p class="text-muted mb-3">{{ plan.description }}</p> -->
+                        <p class="text-muted mb-3">하루 {{ plan.target_words_per_day }}개의 단어를 {{ plan.target_study_time }}분 동안 학습합니다.</p>
+                        
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="text-muted">일일 목표 단어:</span>
+                                    <strong style="color: #2c3e50;">{{ plan.target_words_per_day }}개</strong>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="text-muted">일일 학습 시간:</span>
+                                    <strong style="color: #2c3e50;">{{ plan.target_study_time }}분</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <a href="{% url 'study:plan_detail' plan.id %}" class="btn btn-primary">
+                                <i class="fas fa-eye me-2"></i>상세보기
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                    <p class="text-muted mb-3">생성된 학습 계획이 없습니다.</p>
+                    <a href="{% url 'study:plan_create' %}" class="btn btn-success">
+                        <i class="fas fa-plus me-2"></i>새로운 학습 계획 만들기
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 오른쪽 컬럼 -->
+    <div class="col-lg-4">
+        <!-- 오늘의 단어 카드 -->
+        <div class="card shadow-sm mb-4 border-0">
+            <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center py-3">
+                <h2 class="h4 mb-0" style="color: #2c3e50;">
+                    <i class="fas fa-book me-2"></i>오늘의 단어
+                </h2>
+            </div>
+            <div class="card-body">
+                {% if todays_word %}
+                <div class="word-card p-4">
+                    <h3 class="mb-3 text-center">{{ todays_word.english }}</h3>
+                    <p class="text-muted mb-4 text-center">{{ todays_word.korean }}</p>
+                    
+                    <div class="d-flex justify-content-center gap-2 mb-4">
+                        <button class="btn btn-sound" onclick="speakText('{{ todays_word.english }}')">
+                            <i class="fas fa-volume-up"></i>단어 듣기
+                        </button>
+                    </div>
+
+                    {% if todays_word.example_sentence %}
+                    <div class="example-sentence p-3 mb-4">
+                        <p class="mb-2">{{ todays_word.example_sentence }}</p>
+                        <p class="text-muted mb-3">{{ todays_word.example_translation }}</p>
+                        <div class="d-flex justify-content-center">
+                            <button class="btn btn-sound" onclick="speakText('{{ todays_word.example_sentence }}')">
+                                <i class="fas fa-volume-up"></i>예문 듣기
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="text-center">
+                        <span class="badge bg-primary">{{ todays_word.part_of_speech }}</span>
+                    </div>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>오늘의 단어가 아직 설정되지 않았습니다.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 복습 알림 카드 -->
+        <div class="card shadow-sm mb-4 border-0">
+            <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center py-3">
+                <h2 class="h4 mb-0" style="color: #2c3e50;">
+                    <i class="fas fa-bell me-2"></i>복습 알림
+                </h2>
+                <a href="{% url 'study:notification_list' %}" class="btn btn-link">
+                    <i class="fas fa-list me-1"></i>전체보기
+                </a>
+            </div>
+            <div class="card-body">
+                {% if notifications %}
+                <div class="list-group list-group-flush">
+                    {% for notification in notifications %}
+                    <a href="{% url 'study:review_start' notification.word.id %}" 
+                       class="list-group-item list-group-item-action border-0 py-3">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1" style="color: #2c3e50;">{{ notification.word.english }}</h5>
+                            <small class="text-muted">{{ notification.created_at|date:"Y-m-d H:i" }}</small>
+                        </div>
+                        <p class="mb-1" style="color: #34495e;">{{ notification.word.korean }}</p>
+                        <small class="text-muted">
+                            {% if notification.notification_type == 'review' %}
+                            <i class="fas fa-sync me-1" style="color: #e67e22;"></i>복습이 필요합니다
+                            {% elif notification.notification_type == 'forgotten' %}
+                            <i class="fas fa-exclamation-triangle me-1" style="color: #e74c3c;"></i>자주 틀리는 단어입니다
+                            {% endif %}
+                        </small>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">현재 복습 알림이 없습니다.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 오답 노트 카드 -->
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center py-3">
+                <h2 class="h4 mb-0" style="color: #2c3e50;">
+                    <i class="fas fa-bookmark me-2"></i>오답 노트
+                </h2>
+                <a href="{% url 'quiz:all_wrong_answer_notes' %}" class="btn btn-link">
+                    <i class="fas fa-list me-1"></i>전체보기
+                </a>
+            </div>
+            <div class="card-body">
+                {% if wrong_answers %}
+                <div class="list-group list-group-flush">
+                    {% for wrong in wrong_answers %}
+                    <a href="{% url 'vocabulary:word_detail' wrong.word.id %}" 
+                       class="list-group-item list-group-item-action border-0 py-3">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1" style="color: #2c3e50; font-weight: bold;">{{ wrong.word.english }}</h5>
+                            <small class="text-muted">{{ wrong.created_at|date:"Y-m-d" }}</small>
+                        </div>
+                        <p class="mb-1" style="color: #34495e;">{{ wrong.word.korean }}</p>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-check-circle fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">오답 노트가 비어있습니다.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+function speakText(text) {
+    if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        utterance.rate = 0.8;  // 말하기 속도 조절
+        utterance.pitch = 1;   // 음높이 조절
+        window.speechSynthesis.speak(utterance);
+    } else {
+        alert('이 브라우저는 음성 합성을 지원하지 않습니다.');
+    }
+}
+
+// 현재 시간 표시
+function updateCurrentTime() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('ko-KR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    });
+    document.getElementById('current-time').textContent = timeString;
+}
+
+// 1초마다 시간 업데이트
+setInterval(updateCurrentTime, 1000);
+updateCurrentTime();
+</script>
+{% endblock extra_js %}
+{% endblock content %} 
